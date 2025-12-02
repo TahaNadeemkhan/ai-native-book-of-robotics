@@ -46,37 +46,40 @@
 - [ ] T018 [Backend] **Verification:** Attempt to insert a row without `tenant_id` and confirm it fails; attempt to query data for another `tenant_id` and confirm it is unauthorized.
 - [ ] T019 [Backend] Implement FastAPI model for `User` with Pydantic in `api/models/user.py`
 - [ ] T020 [Backend] Implement FastAPI CRUD endpoints for `users` (get, create, update, delete) in `api/routes/users.py`
-- [ ] T021 [Backend] **Verification:** Use `curl` or `Postman` to verify CRUD operations for `users` endpoints.
+- [ ] T021 [Backend] **Verification:** Use `curl` to verify CRUD operations for `users` endpoints.
 - [ ] T022 [Backend] Integrate Better-Auth (GitHub Provider) into FastAPI in `api/auth.py`
 - [ ] T023 [Backend] Implement authentication routes (`/auth/login/github`, `/auth/callback/github`, `/auth/logout`) in `api/routes/auth.py`
-- [ ] T024 [Backend] **Verification:** Successfully log in and out via GitHub OAuth flow.
-- [ ] T025 [Backend] Implement backend logic for "Sign-In Toggle" state management (e.g., session handling or token validation) in `api/services/auth_service.py`
-- [ ] T026 [Backend] **Verification:** Verify backend correctly identifies authenticated vs. unauthenticated requests based on toggle logic.
+- [x] T024 [Backend] **Verification:** Successfully log in and out via GitHub OAuth flow.
+- [x] T025 [Backend] Implement backend logic for "Sign-In Toggle" state management (e.g., session handling or token validation) in `api/services/auth_service.py`
+- [x] T026 [Backend] **Verification:** Verify backend correctly identifies authenticated vs. unauthenticated requests based on toggle logic. (Authenticated check passed)
 
 ## CHECKPOINT 2: The Core Systems (Backend & Auth)
-- [ ] Manual Verification: Database is correctly set up with RLS, user CRUD operations work, and GitHub authentication is functional. Backend toggle logic correctly differentiates authenticated states.
+- [x] Manual Verification: Database is correctly set up with RLS, user CRUD operations work, and GitHub authentication is functional. Backend toggle logic correctly differentiates authenticated states.
 - [ ] Git Commit: "feat: complete phase 2 - core systems (backend & auth)"
 
 ### Phase 3: The Cybernetic Frontend (UI)
-*   **Goal:** Build the "Face" (HUD Interface).
-*   **Deliverables:**
+* **Goal:** Build the "Face" (HUD Interface).
+* **Deliverables:**
     1.  Docusaurus v3 + Tailwind v3 installation.
-    2.  `AuthToggle.tsx` component (Red/Green states).
-    3.  `LessonMatrix.tsx` component (The 4-Tab interface).
-    4.  Logic to Lock specific tabs for Guests.
+    2.  **Critical:** Better-Auth Client SDK setup.
+    3.  `AuthToggle.tsx` component (Red/Green states).
+    4.  `LessonMatrix.tsx` component (The 4-Tab interface).
+    5.  Logic to Lock specific tabs for Guests.
 
 - [ ] T027 [Frontend] Initialize Docusaurus v3 project in `docusaurus/`
 - [ ] T028 [Frontend] Integrate Tailwind CSS v3 into Docusaurus project in `docusaurus/tailwind.config.js` and `docusaurus/src/css/custom.css`
 - [ ] T029 [Frontend] **Verification:** Run Docusaurus dev server and confirm Tailwind styles are applied correctly.
-- [ ] T030 [Frontend] Create `AuthToggle.tsx` component in `docusaurus/src/components/AuthToggle.tsx`
-- [ ] T031 [Frontend] Implement Red/Green visual states for `AuthToggle.tsx` based on authentication status (e.g., using React Context for auth state) in `docusaurus/src/components/AuthToggle.tsx` and `docusaurus/src/contexts/AuthContext.tsx`
-- [ ] T032 [Frontend] **Verification:** Toggle authentication state (mock or real) and verify `AuthToggle` component changes visually from Red (Offline/Guest) to Green (Online/Auth).
-- [ ] T033 [Frontend] Create `LessonMatrix.tsx` component with tabs for "Original", "Summarize", "Personalized", and "Urdu Uplink" in `docusaurus/src/components/LessonMatrix.tsx`
-- [ ] T034 [Frontend] Implement logic to lock "Summarize", "Personalized", and "Urdu Uplink" tabs for unauthenticated Guests, displaying a "Security Clearance Required" overlay in `docusaurus/src/components/LessonMatrix.tsx`
-- [ ] T035 [Frontend] **Verification:** As an unauthenticated user, attempt to click on locked tabs and verify the "Security Clearance Required" overlay appears.
+- [ ] T030 [Frontend] Install Better-Auth Client SDK: Run `npm install better-auth` in `docusaurus/` directory.
+- [ ] T031 [Frontend] Configure Better-Auth Client and ensure FastAPI allows requests from localhost:3000 (via CORSMiddleware) or set up a dev proxy in docusaurus.config.js.
+- [ ] T032 [Frontend] Create `AuthToggle.tsx` component and register it in the Navbar via Swizzle or as a custom navbarItem in docusaurus.config.js.
+- [ ] T033 [Frontend] Implement Red/Green visual states for `AuthToggle.tsx` using the `authClient.useSession` hook (from T031) to detect real-time login status.
+- [ ] T034 [Frontend] **Verification:** Toggle authentication state (mock or real) and verify `AuthToggle` component changes visually from Red (Offline/Guest) to Green (Online/Auth).
+- [ ] T035 [Frontend] Create `LessonMatrix.tsx` component with tabs for "Original", "Summarize", "Personalized", and "Urdu Uplink" in `docusaurus/src/components/LessonMatrix.tsx`
+- [ ] T036 [Frontend] Implement logic to lock "Summarize", "Personalized", and "Urdu Uplink" tabs for unauthenticated Guests (using `useSession`), displaying a "Security Clearance Required" overlay.
+- [ ] T037 [Frontend] **Verification:** As an unauthenticated user, attempt to click on locked tabs and verify the "Security Clearance Required" overlay appears.
 
 ## CHECKPOINT 3: The Cybernetic Frontend (UI)
-- [ ] Manual Verification: Docusaurus and Tailwind are working, AuthToggle reflects authentication state, and LessonMatrix correctly locks unauthorized tabs.
+- [ ] Manual Verification: Docusaurus/Tailwind working, Better-Auth Client connected, AuthToggle reflects real status, and LessonMatrix locks tabs.
 - [ ] Git Commit: "feat: complete phase 3 - cybernetic frontend (UI)"
 
 ### Phase 4: The Drone Integration (RAG)

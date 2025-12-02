@@ -62,16 +62,12 @@ description: "Task list template for feature implementation"
 
 Examples of foundational tasks (adjust based on your project):
 
-- [ ] T001 Initialize Docusaurus v3 (React/TypeScript) frontend in `frontend/`
-- [ ] T002 Initialize FastAPI (Python 3.11+) backend in `backend/`
-- [ ] T003 [P] Configure linting, formatting (e.g., Prettier, ESLint, Black, Ruff), and static analysis tools for both frontend and backend.
-- [ ] T004 Setup Neon Serverless Postgres database schema and migration framework, ensuring `tenant_id` for RLS on all tables.
-- [ ] T005 [P] Implement Better-Auth authentication and authorization framework with multi-tenancy and organization support.
-- [ ] T006 [P] Setup FastAPI API routing and middleware structure, adhering to API-Centric Communication principle.
-- [ ] T007 Create base models/entities (`users`, `lessons`) with `tenant_id`, JSONB for `users.profile`, and boolean flags for `lessons`.
-- [ ] T008 Configure comprehensive error handling and structured logging infrastructure across frontend and backend.
-- [ ] T009 Setup environment configuration management for secure secret handling.
-- [ ] T010 [P] Create initial **Agent Skills** directory structure in `.claude/skills/` for `translator`, `summarizer`, and `lesson-architect`.
+- [ ] T004 Setup database schema and migrations framework
+- [ ] T005 [P] Implement authentication/authorization framework
+- [ ] T006 [P] Setup API routing and middleware structure
+- [ ] T007 Create base models/entities that all stories depend on
+- [ ] T008 Configure error handling and logging infrastructure
+- [ ] T009 Setup environment configuration management
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 

@@ -2,17 +2,17 @@ from typing import Optional
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
-
+from sqlalchemy import Column, String, DateTime, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from api.database import Base
 
 class UserBase(BaseModel):
     email: EmailStr
     display_name: Optional[str] = None
     additional_info: Optional[dict] = Field(default_factory=dict) # JSONB field
 
-
 class UserCreate(UserBase):
     github_id: Optional[str] = None
-
 
 class UserInDB(UserBase):
     id: UUID
@@ -23,3 +23,15 @@ class UserInDB(UserBase):
 
     class Config:
         from_attributes = True
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=text("gen_random_uuid()"))
+    tenant_id = Column(PG_UUID(as_uuid=True), nullable=False)
+    github_id = Column(String, unique=True, index=True, nullable=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    display_name = Column(String, nullable=True)
+    additional_info = Column(JSONB, nullable=True, default=lambda: {})
+    created_at = Column(DateTime(timezone=True), server_default=text("now()"))
+    updated_at = Column(DateTime(timezone=True), server_default=text("now()"), onupdate=text("now()"))

@@ -85,35 +85,20 @@
 ### Functional Requirements
 
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]
+- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
 
-### Design & UX Requirements
-
-- **DXR-001**: The platform MUST adhere to a "Cybernetic HUD" & "Industrial Robotics" theme.
-- **DXR-002**: Visuals MUST feature a dark mode default with neon accents (Cyan/Amber), glassmorphism, and technical fonts (Rajdhani/JetBrains Mono).
-- **DXR-003**: User experience MUST incorporate micro-interactions evoking "calibrating sensors" or "initializing systems."
-
 *Example of marking unclear requirements:*
 
-- **FR-006**: Onboarding MUST capture "Hardware Specs" (GPU/RAM) and "AI Proficiency" in `users` table (JSONB).
-- **FR-007**: Every lesson page MUST incorporate a `<Tabs>` system for 'Original', 'Summarize', 'Personalized', and 'Urdu Translation' content.
-- **FR-008**: The platform MUST prioritize the creation of **Agent Skills** (e.g., `translator`, `summarizer`, `lesson-architect`) to ensure reusable intelligence.
-- **FR-009**: A "Floating Drone Assistant" UI MUST embed the RAG Chatbot.
+- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
+- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
 ### Key Entities *(include if feature involves data)*
 
-- **User**: Represents a platform user. Must include `tenant_id` for RLS. Profile data (Hardware Specs, AI Proficiency) MUST be stored in a JSONB column.
-- **Lesson**: Represents a learning module. Must include `tenant_id` for RLS. MUST include boolean flags for feature states (e.g., `is_summary_generated`).
-- **[Entity 3]**: [What it represents, key attributes without implementation]
-
-### Database Schema Standards
-
-- **DBS-001**: All tables MUST include `tenant_id` for Row-Level Security (RLS).
-- **DBS-002**: The `users` table MUST use JSONB for flexible profile data (e.g., Hardware Specs, AI Proficiency).
-- **DBS-003**: The `lessons` table MUST use boolean flags for feature states (e.g., `is_summary_generated`).
+- **[Entity 1]**: [What it represents, key attributes without implementation]
+- **[Entity 2]**: [What it represents, relationships to other entities]
 
 ## Success Criteria *(mandatory)*
 
