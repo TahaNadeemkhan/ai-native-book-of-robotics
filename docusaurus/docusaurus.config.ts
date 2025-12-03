@@ -35,6 +35,12 @@ const config: Config = {
     locales: ['en'],
   },
 
+  clientModules: [require.resolve('./src/theme/Root.tsx')],
+
+  stylesheets: [
+    'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;700;900&display=swap',
+  ],
+
   presets: [
     [
       'classic',
@@ -88,6 +94,10 @@ const config: Config = {
           label: 'Tutorial',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
+        {
+          type: 'custom-authToggle',
+          position: 'right',
+        },
         {
           href: 'https://github.com/facebook/docusaurus',
           label: 'GitHub',

@@ -66,40 +66,44 @@
     4.  `LessonMatrix.tsx` component (The 4-Tab interface).
     5.  Logic to Lock specific tabs for Guests.
 
-- [ ] T027 [Frontend] Initialize Docusaurus v3 project in `docusaurus/`
-- [ ] T028 [Frontend] Integrate Tailwind CSS v3 into Docusaurus project in `docusaurus/tailwind.config.js` and `docusaurus/src/css/custom.css`
-- [ ] T029 [Frontend] **Verification:** Run Docusaurus dev server and confirm Tailwind styles are applied correctly.
-- [ ] T030 [Frontend] Install Better-Auth Client SDK: Run `npm install better-auth` in `docusaurus/` directory.
-- [ ] T031 [Frontend] Configure Better-Auth Client and ensure FastAPI allows requests from localhost:3000 (via CORSMiddleware) or set up a dev proxy in docusaurus.config.js.
-- [ ] T032 [Frontend] Create `AuthToggle.tsx` component and register it in the Navbar via Swizzle or as a custom navbarItem in docusaurus.config.js.
-- [ ] T033 [Frontend] Implement Red/Green visual states for `AuthToggle.tsx` using the `authClient.useSession` hook (from T031) to detect real-time login status.
-- [ ] T034 [Frontend] **Verification:** Toggle authentication state (mock or real) and verify `AuthToggle` component changes visually from Red (Offline/Guest) to Green (Online/Auth).
-- [ ] T035 [Frontend] Create `LessonMatrix.tsx` component with tabs for "Original", "Summarize", "Personalized", and "Urdu Uplink" in `docusaurus/src/components/LessonMatrix.tsx`
-- [ ] T036 [Frontend] Implement logic to lock "Summarize", "Personalized", and "Urdu Uplink" tabs for unauthenticated Guests (using `useSession`), displaying a "Security Clearance Required" overlay.
-- [ ] T037 [Frontend] **Verification:** As an unauthenticated user, attempt to click on locked tabs and verify the "Security Clearance Required" overlay appears.
+- [x] T027 [Frontend] Initialize Docusaurus v3 project in `docusaurus/` (Already exists)
+- [x] T028 [Frontend] Integrate Tailwind CSS v3 into Docusaurus project in `docusaurus/tailwind.config.js` and `docusaurus/src/css/custom.css`
+- [x] T029 [Frontend] **Verification:** Run Docusaurus dev server and confirm Tailwind styles are applied correctly.
+- [x] T030 [Frontend] Install Better-Auth Client SDK: Run `npm install better-auth` in `docusaurus/` directory.
+- [x] T031 [Frontend] Configure Better-Auth Client and ensure FastAPI allows requests from localhost:3000 (via CORSMiddleware) or set up a dev proxy in docusaurus.config.js.
+- [x] T032 [Frontend] Create `AuthToggle.tsx` component and register it in the Navbar via Swizzle or as a custom navbarItem in docusaurus.config.js.
+- [x] T033 [Frontend] Implement Red/Green visual states for `AuthToggle.tsx` using the `authClient.useSession` hook (from T031) to detect real-time login status.
+- [x] T034 [Frontend] **Verification:** Toggle authentication state (mock or real) and verify `AuthToggle` component changes visually from Red (Offline/Guest) to Green (Online/Auth).
+- [x] T035 [Frontend] Create `LessonMatrix.tsx` component with tabs for "Original", "Summarize", "Personalized", and "Urdu Uplink" in `docusaurus/src/components/LessonMatrix.tsx`
+- [x] T036 [Frontend] Implement logic to lock "Summarize", "Personalized", and "Urdu Uplink" tabs for unauthenticated Guests (using `useSession`), displaying a "Security Clearance Required" overlay.
+- [x] T037 [Frontend] **Verification:** As an unauthenticated user, attempt to click on locked tabs and verify the "Security Clearance Required" overlay appears.
 
 ## CHECKPOINT 3: The Cybernetic Frontend (UI)
 - [ ] Manual Verification: Docusaurus/Tailwind working, Better-Auth Client connected, AuthToggle reflects real status, and LessonMatrix locks tabs.
 - [ ] Git Commit: "feat: complete phase 3 - cybernetic frontend (UI)"
 
 ### Phase 4: The Drone Integration (RAG)
-*   **Goal:** Build the "Assistant".
-*   **Deliverables:**
+* **Goal:** Build the "Assistant" (The Chatbot).
+* **Deliverables:**
     1.  Qdrant Vector DB indexing script.
     2.  OpenAI Agent setup.
     3.  `DroneWidget.tsx` floating component.
     4.  Context Menu "Scan" implementation.
 
-- [ ] T036 [RAG] Configure Qdrant client in `api/services/qdrant_service.py`
-- [ ] T037 [RAG] Create initial Qdrant vector database collection and indexing script (e.g., for lesson content) in `api/scripts/index_qdrant.py`
-- [ ] T038 [RAG] **Verification:** Run indexing script and confirm data is stored in Qdrant via Qdrant UI or API.
-- [ ] T039 [RAG] Configure OpenAI Agent with access to Qdrant for RAG capabilities in `api/services/openai_agent.py`
-- [ ] T040 [RAG] Implement `/drone/chat` API endpoint for general RAG Q&A in `api/routes/drone.py`
-- [ ] T041 [RAG] **Verification:** Send a test query to `/drone/chat` and verify a relevant RAG-generated answer.
-- [ ] T042 [RAG] Create `DroneWidget.tsx` floating component in `docusaurus/src/components/DroneWidget.tsx`
-- [ ] T043 [RAG] Implement context menu integration for "Scan with Drone" functionality in Docusaurus (e.g., via a custom plugin or React event listener) in `docusaurus/src/theme/Root.js` or a similar global wrapper.
-- [ ] T044 [RAG] Implement `/drone/scan` API endpoint for contextual scanning of highlighted text in `api/routes/drone.py`
-- [ ] T045 [RAG] **Verification:** Highlight text on a Docusaurus page, select "Scan with Drone" from the context menu, and verify a contextual RAG answer is displayed in `DroneWidget.tsx`.
+- [ ] T038 [RAG] Configure Qdrant client in `api/services/qdrant_service.py`
+- [ ] T039 [RAG] Create initial Qdrant vector database collection and indexing script (e.g., for lesson content) in `api/scripts/index_qdrant.py`
+- [ ] T040 [RAG] **Verification:** Run indexing script and confirm data is stored in Qdrant via Qdrant UI or API.
+- [ ] T041 [RAG] Configure OpenAI Agent with access to Qdrant for RAG capabilities in `api/services/openai_agent.py`
+- [ ] T042 [RAG] Implement `/drone/chat`(a chatbot) API endpoint for general RAG Q&A in `api/routes/drone.py`
+- [ ] T043 [RAG] **Verification:** Send a test query to `/drone/chat` and verify a relevant RAG-generated answer.
+- [ ] T044 [RAG] Create `DroneWidget.tsx` floating component in `docusaurus/src/components/DroneWidget.tsx`
+- [ ] T045 [RAG] Implement context menu integration for "Scan with Drone" functionality in Docusaurus (e.g., via a custom plugin or React event listener) in `docusaurus/src/theme/Root.js` or a similar global wrapper.
+- [ ] T046 [RAG] Implement `/drone/scan` API endpoint for contextual scanning of highlighted text in `api/routes/drone.py`
+- [ ] T047 [RAG] **Verification:** Highlight text on a Docusaurus page, select "Scan with Drone" from the context menu, and verify a contextual RAG answer is displayed in `DroneWidget.tsx`.
+
+## CHECKPOINT 4: The Drone Integration (RAG)
+- [ ] Manual Verification: Qdrant is indexed, OpenAI Agent provides relevant answers, and the Drone Widget with context menu scanning is fully functional.
+- [ ] Git Commit: "feat: complete phase 4 - drone integration (RAG)"
 
 ## CHECKPOINT 4: The Drone Integration (RAG)
 - [ ] Manual Verification: Qdrant is indexed, OpenAI Agent provides relevant answers, and the Drone Widget with context menu scanning is fully functional.

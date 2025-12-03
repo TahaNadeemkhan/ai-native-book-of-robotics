@@ -1,30 +1,192 @@
-/**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* You can override the default Infima variables here. */
+/* -------------------------------------------------------------
+   CYBERPUNK HUD THEME - 30Y EXP DESIGNER EDITION
+   ------------------------------------------------------------- */
+
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  /* Core Palette */
+  --hud-bg: #0c0f12;           /* Deep Shadow Black */
+  --hud-panel: #111418;        /* Slightly lighter panel */
+  --hud-primary: #00f7a3;      /* Primary Neon Green */
+  --hud-accent: #00eaff;       /* Accent Cyan */
+  --hud-text-body: #9aa5b1;    /* Muted Grey */
+  --hud-text-soft: #c4fff9;    /* Soft Mint */
+  --hud-alert: #ff003c;        /* Critical Red */
+
+  /* Fonts */
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
+  --ifm-font-family-monospace: 'JetBrains Mono', monospace;
+  --hud-font-display: 'Orbitron', sans-serif;
+
+  /* Docusaurus Overrides */
+  --ifm-color-primary: var(--hud-primary);
+  --ifm-color-primary-dark: #00cc85;
+  --ifm-color-primary-darker: #00b374;
+  --ifm-color-primary-darkest: #00935f;
+  --ifm-color-primary-light: #33ffb5;
+  --ifm-color-primary-lighter: #66ffc7;
+  --ifm-color-primary-lightest: #99ffd9;
+
+  --ifm-background-color: var(--hud-bg);
+  --ifm-font-color-base: var(--hud-text-body);
+  --ifm-link-color: var(--hud-accent);
+  --ifm-heading-color: var(--hud-primary);
+  
+  --ifm-navbar-background-color: rgba(12, 15, 18, 0.9);
+  --ifm-navbar-shadow: 0 1px 0 0 rgba(0, 247, 163, 0.15);
+  --ifm-footer-background-color: #050608;
+  
+  --ifm-menu-color: var(--hud-text-body);
+  --ifm-menu-color-active: var(--hud-primary);
+  --ifm-menu-color-background-active: rgba(0, 247, 163, 0.08);
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+html[data-theme='light'] {
+  --ifm-background-color: var(--hud-bg);
+  --ifm-font-color-base: var(--hud-text-body);
+  --ifm-navbar-background-color: var(--hud-bg);
+}
+
+/* -------------------------------------------------------------
+   TYPOGRAPHY - HUD STANDARD
+   ------------------------------------------------------------- */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--hud-font-display);
+  color: var(--hud-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  text-shadow: 0 0 15px rgba(0, 247, 163, 0.2);
+  border-bottom: 1px solid rgba(0, 247, 163, 0.3);
+  padding-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--hud-text-soft);
+}
+
+h3 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--hud-accent);
+}
+
+p {
+  color: var(--hud-text-body);
+  line-height: 1.75;
+  font-size: 1.05rem;
+  margin-bottom: 1.5rem;
+}
+
+strong {
+  color: var(--hud-text-soft);
+  font-weight: 600;
+}
+
+code {
+  color: var(--hud-accent);
+  background: rgba(0, 234, 255, 0.1);
+  border: 1px solid rgba(0, 234, 255, 0.2);
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+}
+
+/* -------------------------------------------------------------
+   UI ELEMENTS
+   ------------------------------------------------------------- */
+
+/* Navbar */
+.navbar {
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 247, 163, 0.1);
+}
+
+.navbar__link:hover, .navbar__link--active {
+  color: var(--hud-primary);
+  text-shadow: 0 0 8px rgba(0, 247, 163, 0.6);
+}
+
+/* Sidebar */
+.theme-doc-sidebar-container {
+  border-right: 1px solid rgba(0, 247, 163, 0.1) !important;
+}
+
+.menu__link {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu__link:hover {
+  color: var(--hud-text-soft);
+  transform: translateX(4px);
+}
+
+/* Code Blocks */
+.theme-code-block {
+  border: 1px solid rgba(154, 165, 177, 0.2);
+  border-radius: 0;
+  box-shadow: none;
+  background-color: #080a0c !important;
+}
+
+/* -------------------------------------------------------------
+   CUSTOM COMPONENT UTILITIES
+   ------------------------------------------------------------- */
+
+/* Cyber Button (Used in AuthToggle) */
+.cyber-button {
+  position: relative;
+  background: rgba(0, 247, 163, 0.05);
+  border: 1px solid var(--hud-primary);
+  color: var(--hud-primary);
+  font-family: var(--hud-font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 8px 20px;
+  transition: all 0.3s ease;
+  clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.cyber-button:hover {
+  background: rgba(0, 247, 163, 0.15);
+  box-shadow: 0 0 20px rgba(0, 247, 163, 0.3);
+  text-shadow: 0 0 5px var(--hud-primary);
+}
+
+.cyber-button.offline {
+  border-color: var(--hud-alert);
+  color: var(--hud-alert);
+  background: rgba(255, 0, 60, 0.05);
+}
+
+.cyber-button.offline:hover {
+  background: rgba(255, 0, 60, 0.15);
+  box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+  text-shadow: 0 0 5px var(--hud-alert);
+}
+
+/* Indicators */
+.cyber-indicator {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background-color: currentColor;
+  border-radius: 50%;
+  margin-right: 10px;
+  box-shadow: 0 0 8px currentColor;
 }

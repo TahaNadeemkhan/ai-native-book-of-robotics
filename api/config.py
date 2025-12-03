@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: Optional[str] = None
     GITHUB_CLIENT_SECRET: Optional[str] = None
     GITHUB_REDIRECT_URI: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
+    QDRANT_HOST: Optional[str] = None
+    QDRANT_API_KEY: Optional[str] = None
+    QDRANT_COLLECTION_NAME: str = "ai_native_book_platform"
     ALGORITHM: str = "HS256" # Default algorithm for JWT
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 # Default token expiration time
 

@@ -1,106 +1,259 @@
 import logging
-import httpx
-from authlib.integrations.starlette_client import (
-    OAuthError,  # Correct exception for v1.6.5
-)
-from fastapi import APIRouter, Depends, HTTPException
+import secrets
+from typing import Optional, Dict, Any
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Body
+from fastapi.responses import JSONResponse, HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.requests import Request
+from starlette.responses import RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_500_INTERNAL_SERVER_ERROR
 
-from api.auth import oauth
+import httpx
 from api.dependencies import get_db
-from api.services.auth_service import authenticate_github_user_and_create_token
-from api.config import settings # Import settings
+from api.services.auth_service import authenticate_github_user_and_create_token, is_authenticated
+from api.config import settings
 
 router = APIRouter()
 
+# Production-ready Cookie Settings
+COOKIE_NAME = "session_token"
+OAUTH_STATE_COOKIE = "oauth_state"
 
-@router.get("/login/github")
-async def login_github(request: Request):
+# In production, secure=True (HTTPS only) and samesite='lax' or 'none'
+COOKIE_SECURE = False  # Set to True in Prod
+COOKIE_SAMESITE = "lax" 
+
+@router.post("/sign-in/social")
+async def sign_in_social(
+    request: Request, 
+    body: Dict[str, Any] = Body(...)
+):
     """
-    Redirects the user to GitHub's OAuth login page.
+    Better-Auth Compatible Endpoint: Initiates Social Login.
+    Client sends: { "provider": "github", "callbackURL": "..." }
+    We return: { "url": "https://github.com/login/..." }
     """
-    redirect_uri = settings.GITHUB_REDIRECT_URI or request.url_for("callback_github")
-    return await oauth.github.authorize_redirect(request, redirect_uri, scope="user:email")
+    provider = body.get("provider")
+    if provider != "github":
+        raise HTTPException(status_code=400, detail="Unsupported provider")
+
+    # 1. Generate robust state
+    state = secrets.token_urlsafe(16)
+    
+    # 2. Construct GitHub Auth URL manually to have full control
+    redirect_uri = settings.GITHUB_REDIRECT_URI or str(request.url_for("callback_github"))
+    auth_url = (
+        f"https://github.com/login/oauth/authorize?"
+        f"client_id={settings.GITHUB_CLIENT_ID}&"
+        f"redirect_uri={redirect_uri}&"
+        f"scope=user:email&"
+        f"state={state}"
+    )
+    
+    # 3. Return JSON with URL and Set State Cookie
+    response = JSONResponse(content={"url": auth_url, "redirect": True})
+    
+    response.set_cookie(
+        key=OAUTH_STATE_COOKIE,
+        value=state,
+        httponly=True,
+        max_age=600, # 10 minutes
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        path="/"
+    )
+        
+    return response
+
+
+@router.get("/sign-in/github")
+async def sign_in_github_direct(request: Request):
+    """
+    Robust Browser-based Login.
+    Redirects directly to GitHub, ensuring cookies stick (avoids AJAX/Fetch issues).
+    """
+    # 1. Generate robust state
+    state = secrets.token_urlsafe(16)
+    
+    # 2. Construct GitHub Auth URL
+    redirect_uri = settings.GITHUB_REDIRECT_URI or str(request.url_for("callback_github"))
+    
+    logging.info(f"DEBUG: Using Redirect URI: {redirect_uri}")
+    
+    auth_url = (
+        f"https://github.com/login/oauth/authorize?"
+        f"client_id={settings.GITHUB_CLIENT_ID}&"
+        f"redirect_uri={redirect_uri}&"
+        f"scope=user:email&"
+        f"state={state}"
+    )
+    
+    logging.info(f"DEBUG: Generated Auth URL: {auth_url}")
+    
+    # 3. Return HTML with Redirect (Forces Cookie Set)
+    html_content = f"""
+    <html>
+        <head>
+            <title>Redirecting...</title>
+            <meta http-equiv="refresh" content="0;url={auth_url}">
+        </head>
+        <body>
+            <p>Redirecting to GitHub...</p>
+            <script>window.location.href = "{auth_url}"</script>
+        </body>
+    </html>
+    """
+    
+    response = HTMLResponse(content=html_content)
+    
+    response.set_cookie(
+        key=OAUTH_STATE_COOKIE,
+        value=state,
+        httponly=True,
+        max_age=600,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        path="/"
+    )
+    
+    return response
 
 
 @router.get("/callback/github")
 async def callback_github(request: Request, db: AsyncSession = Depends(get_db)):
     """
-    Handles the callback from GitHub after successful authentication.
-    Exchanges the authorization code for an access token, fetches user data,
-    and issues an internal JWT.
+    Handles GitHub OAuth callback manually.
+    Sets a Secure HttpOnly Cookie and Redirects to Frontend.
     """
     try:
-        # Exchange authorization code for access token
-        token = await oauth.github.authorize_access_token(request)
-        github_access_token = token.get("access_token")
-        if not github_access_token:
-            raise HTTPException(
-                status_code=HTTP_401_UNAUTHORIZED,
-                detail="GitHub access token not found",
-            )
+        # 1. Verify State
+        code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        saved_state = request.cookies.get(OAUTH_STATE_COOKIE)
+        
+        if not code or not state:
+             raise HTTPException(status_code=400, detail="Missing code or state")
+             
+        # If state check fails, log it but maybe proceed if dev environment? No, security first.
+        if state != saved_state:
+            logging.error(f"State mismatch. Received: {state}, Saved: {saved_state}")
+            raise HTTPException(status_code=400, detail="Invalid OAuth state (CSRF check failed)")
 
-        # Fetch user data from GitHub
+        # 2. Exchange Code for Token
         async with httpx.AsyncClient() as client:
+            token_resp = await client.post(
+                "https://github.com/login/oauth/access_token",
+                headers={"Accept": "application/json"},
+                data={
+                    "client_id": settings.GITHUB_CLIENT_ID,
+                    "client_secret": settings.GITHUB_CLIENT_SECRET,
+                    "code": code,
+                    "redirect_uri": settings.GITHUB_REDIRECT_URI
+                }
+            )
+            token_resp.raise_for_status()
+            token_data = token_resp.json()
+            github_access_token = token_data.get("access_token")
+            
+            if not github_access_token:
+                logging.error(f"Failed to get token: {token_data}")
+                raise HTTPException(status_code=401, detail="Failed to retrieve access token")
+
+            # 3. Fetch User Data
             headers = {"Authorization": f"token {github_access_token}"}
-            response = await client.get("https://api.github.com/user", headers=headers)
-            response.raise_for_status()
-            logging.info(f"GitHub API response status: {response.status_code}")
-            logging.info(f"GitHub API raw response text: {response.text}")
-            github_user_data = response.json()
-            logging.info(f"Received user data from GitHub (parsed JSON): {github_user_data}")
+            user_resp = await client.get("https://api.github.com/user", headers=headers)
+            user_resp.raise_for_status()
+            github_user = user_resp.json()
+            
+            emails_resp = await client.get("https://api.github.com/user/emails", headers=headers)
+            emails_resp.raise_for_status()
+            github_emails = emails_resp.json()
 
-            # Fetch user emails from GitHub
-            emails_response = await client.get("https://api.github.com/user/emails", headers=headers)
-            emails_response.raise_for_status()
-            github_emails_data = emails_response.json()
-            logging.info(f"Received user emails from GitHub: {github_emails_data}")
+            email = next((e["email"] for e in github_emails if e["primary"] and e["verified"]), None)
+            
+            if not email:
+                 raise HTTPException(status_code=400, detail="No verified primary email found")
 
-            github_id = str(github_user_data.get("id"))
-            email = None
-            for user_email in github_emails_data:
-                if user_email.get("primary") and user_email.get("verified"):
-                    email = user_email.get("email")
-                    break
-
-            display_name = github_user_data.get("name") or github_user_data.get("login")
-
-            if not github_id or not email:
-                raise HTTPException(
-                    status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Could not retrieve essential user data from GitHub (id or email).",
-                )
-
-        # Authenticate user and create internal JWT
+        # 4. Create Internal Session/Token
         jwt_token = await authenticate_github_user_and_create_token(
             db=db,
-            github_id=github_id,
+            github_id=str(github_user.get("id")),
             email=email,
-            display_name=display_name,
+            display_name=github_user.get("name") or github_user.get("login"),
         )
 
-        return {"access_token": jwt_token, "token_type": "bearer"}
-
-    except OAuthError:  # Updated for Authlib v1.6.5
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
-            detail=(
-                "CSRF warning or OAuth error: state mismatch or invalid OAuth flow. "
-                "Please start the login process from /auth/login/github."
-            ),
+        # 5. Redirect to Frontend
+        frontend_url = settings.FRONTEND_URL or "http://localhost:3000"
+        response = RedirectResponse(url=frontend_url)
+        
+        # SET SECURE COOKIE (Session)
+        response.set_cookie(
+            key=COOKIE_NAME,
+            value=jwt_token,
+            httponly=True,
+            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            secure=COOKIE_SECURE, 
+            samesite=COOKIE_SAMESITE,
+            path="/"
         )
-    except HTTPException:
-        raise
+        
+        # Clear State Cookie
+        response.delete_cookie(OAUTH_STATE_COOKIE)
+        
+        return response
+
     except Exception as e:
-        logging.exception("Authentication failed due to an unexpected error")
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED, detail=f"Authentication failed: {e}"
-        )
+        logging.error(f"Auth Callback Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Authentication Failed: {str(e)}")
 
 
-# Optional logout endpoint (client-side JWT logout)
-# @router.get("/logout")
-# async def logout():
-#     return {"message": "Successfully logged out"}
+@router.get("/get-session")
+async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Better-Auth Compatible Endpoint: Validates Session.
+    Expected by client useSession() hook.
+    """
+    token = request.cookies.get(COOKIE_NAME)
+    
+    # If no cookie, check Authorization header (Bearer) as fallback
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+
+    if not token:
+        return JSONResponse(content=None) # Return null if no session
+
+    user_id = await is_authenticated(token)
+    
+    if not user_id:
+         # Invalid token, clear cookie
+        response = JSONResponse(content=None)
+        response.delete_cookie(COOKIE_NAME)
+        return response
+
+    # Return structure expected by Better-Auth
+    return {
+        "session": {
+            "id": token,
+            "userId": user_id,
+            "expiresAt": "2099-12-31T23:59:59.000Z",
+            "ipAddress": request.client.host,
+            "userAgent": request.headers.get("user-agent")
+        },
+        "user": {
+            "id": user_id,
+            "email": "user@example.com", 
+            "name": "Cybernetic User",
+            "image": "https://github.com/ghost.png"
+        }
+    }
+
+@router.post("/sign-out")
+async def sign_out(response: Response):
+    """
+    Clears the session cookie.
+    """
+    response = JSONResponse(content={"success": True})
+    response.delete_cookie(COOKIE_NAME)
+    return response

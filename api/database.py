@@ -5,8 +5,10 @@ from api.config import settings
 
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=True, # Set to True to see SQL queries for debugging
-    connect_args={"ssl": "require"}
+    echo=True,
+    connect_args={"ssl": "require"},
+    pool_pre_ping=True,
+    pool_recycle=1800
 )
 
 AsyncSessionLocal = sessionmaker(
