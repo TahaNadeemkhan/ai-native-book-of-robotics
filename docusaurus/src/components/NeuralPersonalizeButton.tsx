@@ -30,7 +30,10 @@ export default function NeuralPersonalizeButton({ contentSelector = '.markdown' 
       const res = await fetch('/api/ai/personalize-chapter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({
+            content,
+            path: window.location.pathname 
+        }),
         credentials: 'include'
       });
       
