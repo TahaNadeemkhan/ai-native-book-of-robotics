@@ -1,14 +1,75 @@
-from typing import List
+from typing import List, Dict, Any
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
-from api.dependencies import get_db, get_current_tenant_id
+from api.dependencies import get_db, get_current_tenant_id, get_current_user_id
 from api.models.user import User, UserCreate, UserInDB
 
 router = APIRouter()
 
+@router.get("/me", response_model=UserInDB)
+async def read_users_me(
+    user_id: UUID = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get current user.
+    """
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+        
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.get("/me/onboarding")
+async def get_onboarding_info(
+    user_id: UUID = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get onboarding info (additional_info).
+    """
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+        
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    return user.additional_info or {}
+
+@router.post("/onboarding")
+async def update_onboarding_info(
+    info: Dict[str, Any] = Body(...),
+    user_id: UUID = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update onboarding info.
+    """
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+        
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Update additional_info. Merge or replace? Replace seems safer for this specific flow.
+    # But let's merge if it exists to be nice.
+    current_info = user.additional_info or {}
+    current_info.update(info)
+    user.additional_info = current_info
+    
+    await db.commit()
+    await db.refresh(user)
+    return {"success": True, "additional_info": user.additional_info}
 
 @router.post("/", response_model=UserInDB, status_code=status.HTTP_201_CREATED)
 async def create_user(

@@ -37,6 +37,10 @@ const config: Config = {
 
   clientModules: [require.resolve('./src/theme/Root.tsx')],
 
+  plugins: [
+    require.resolve('./plugins/proxy-plugin'),
+  ],
+
   stylesheets: [
     'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;700;900&display=swap',
   ],

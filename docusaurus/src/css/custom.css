@@ -8,7 +8,7 @@
 
 :root {
   /* Core Palette */
-  --hud-bg: #0c0f12;           /* Deep Shadow Black */
+  --hud-bg: #0c0f12;           /* Deep Void Black */
   --hud-panel: #111418;        /* Slightly lighter panel */
   --hud-primary: #00f7a3;      /* Primary Neon Green */
   --hud-accent: #00eaff;       /* Accent Cyan */
@@ -19,7 +19,7 @@
   /* Fonts */
   --ifm-font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
   --ifm-font-family-monospace: 'JetBrains Mono', monospace;
-  --hud-font-display: 'Orbitron', sans-serif;
+  --hud-font-display: 'Orbitron', sans-serif; 
 
   /* Docusaurus Overrides */
   --ifm-color-primary: var(--hud-primary);
@@ -35,7 +35,7 @@
   --ifm-link-color: var(--hud-accent);
   --ifm-heading-color: var(--hud-primary);
   
-  --ifm-navbar-background-color: rgba(12, 15, 18, 0.9);
+  --ifm-navbar-background-color: rgba(12, 15, 18, 0.95);
   --ifm-navbar-shadow: 0 1px 0 0 rgba(0, 247, 163, 0.15);
   --ifm-footer-background-color: #050608;
   
@@ -65,7 +65,7 @@ h1, h2, h3, h4, h5, h6 {
 h1 {
   font-size: 2.5rem;
   font-weight: 900;
-  text-shadow: 0 0 15px rgba(0, 247, 163, 0.2);
+  text-shadow: 0 0 15px rgba(0, 247, 163, 0.4);
   border-bottom: 1px solid rgba(0, 247, 163, 0.3);
   padding-bottom: 0.5rem;
 }
@@ -89,83 +89,119 @@ p {
   margin-bottom: 1.5rem;
 }
 
-strong {
-  color: var(--hud-text-soft);
-  font-weight: 600;
-}
-
-code {
-  color: var(--hud-accent);
-  background: rgba(0, 234, 255, 0.1);
-  border: 1px solid rgba(0, 234, 255, 0.2);
-  padding: 0.1rem 0.3rem;
-  border-radius: 2px;
-}
-
 /* -------------------------------------------------------------
-   UI ELEMENTS
+   CYBER COMPONENTS (REUSABLE)
    ------------------------------------------------------------- */
 
-/* Navbar */
-.navbar {
+/* 1. Cyber Modal Backdrop & Container */
+.cyber-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0, 247, 163, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  background-image: 
+    linear-gradient(rgba(0, 247, 163, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 247, 163, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-.navbar__link:hover, .navbar__link--active {
-  color: var(--hud-primary);
-  text-shadow: 0 0 8px rgba(0, 247, 163, 0.6);
+.cyber-card {
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-primary);
+  box-shadow: 0 0 30px rgba(0, 247, 163, 0.15), inset 0 0 20px rgba(0, 247, 163, 0.05);
+  border-radius: 2px; /* Sharper corners */
+  position: relative;
+  overflow: hidden;
 }
 
-/* Sidebar */
-.theme-doc-sidebar-container {
-  border-right: 1px solid rgba(0, 247, 163, 0.1) !important;
+/* 2. Scanline Effect */
+.scanline-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent 50%, rgba(0, 247, 163, 0.02) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 10;
 }
 
-.menu__link {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.menu__link:hover {
+/* 3. Cyber Input Fields */
+.cyber-input {
+  width: 100%;
+  background-color: rgba(17, 20, 24, 0.8);
+  border: 1px solid var(--hud-text-body);
   color: var(--hud-text-soft);
-  transform: translateX(4px);
+  font-family: var(--ifm-font-family-monospace);
+  padding: 12px 16px;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  outline: none;
 }
 
-/* Code Blocks */
-.theme-code-block {
-  border: 1px solid rgba(154, 165, 177, 0.2);
-  border-radius: 0;
-  box-shadow: none;
-  background-color: #080a0c !important;
+.cyber-input:focus {
+  border-color: var(--hud-accent);
+  box-shadow: 0 0 15px rgba(0, 234, 255, 0.2);
+  background-color: rgba(0, 234, 255, 0.05);
+  animation: focus-pulse 1.5s infinite;
 }
 
-/* -------------------------------------------------------------
-   CUSTOM COMPONENT UTILITIES
-   ------------------------------------------------------------- */
+.cyber-input::placeholder {
+  color: rgba(154, 165, 177, 0.5);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
 
-/* Cyber Button (Used in AuthToggle) */
+/* 4. Cyber Buttons (Primary & Secondary) */
 .cyber-button {
   position: relative;
   background: rgba(0, 247, 163, 0.05);
   border: 1px solid var(--hud-primary);
   color: var(--hud-primary);
   font-family: var(--hud-font-display);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  padding: 8px 20px;
+  padding: 10px 24px;
   transition: all 0.3s ease;
-  clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
 }
 
-.cyber-button:hover {
-  background: rgba(0, 247, 163, 0.15);
-  box-shadow: 0 0 20px rgba(0, 247, 163, 0.3);
-  text-shadow: 0 0 5px var(--hud-primary);
+.cyber-button:hover:not(:disabled) {
+  background: var(--hud-primary);
+  color: var(--hud-bg);
+  box-shadow: 0 0 25px rgba(0, 247, 163, 0.4);
+  text-shadow: none;
+}
+
+.cyber-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--hud-text-body);
+  color: var(--hud-text-body);
+}
+
+.cyber-button.secondary {
+  border-color: var(--hud-accent);
+  color: var(--hud-accent);
+  background: rgba(0, 234, 255, 0.05);
+}
+
+.cyber-button.secondary:hover {
+  background: var(--hud-accent);
+  color: var(--hud-bg);
+  box-shadow: 0 0 25px rgba(0, 234, 255, 0.4);
 }
 
 .cyber-button.offline {
@@ -175,18 +211,102 @@ code {
 }
 
 .cyber-button.offline:hover {
-  background: rgba(255, 0, 60, 0.15);
-  box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
-  text-shadow: 0 0 5px var(--hud-alert);
+  background: var(--hud-alert);
+  color: white;
+  box-shadow: 0 0 25px rgba(255, 0, 60, 0.4);
 }
 
-/* Indicators */
-.cyber-indicator {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background-color: currentColor;
-  border-radius: 50%;
-  margin-right: 10px;
-  box-shadow: 0 0 8px currentColor;
+/* 5. Glitch Text Animation */
+.glitch-text {
+  position: relative;
+}
+
+.glitch-text:hover {
+  animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+}
+
+@keyframes glitch {
+  0% { transform: translate(0) }
+  20% { transform: translate(-2px, 2px) }
+  40% { transform: translate(-2px, -2px) }
+  60% { transform: translate(2px, 2px) }
+  80% { transform: translate(2px, -2px) }
+  100% { transform: translate(0) }
+}
+
+/* 6. Tabs (Login/Signup) */
+.cyber-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(154, 165, 177, 0.2);
+  margin-bottom: 20px;
+}
+
+.cyber-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  cursor: pointer;
+  font-family: var(--hud-font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.9rem;
+  color: var(--hud-text-body);
+  transition: all 0.3s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.cyber-tab:hover {
+  color: var(--hud-text-soft);
+}
+
+.cyber-tab.active {
+  color: var(--hud-primary);
+  border-bottom-color: var(--hud-primary);
+  text-shadow: 0 0 8px rgba(0, 247, 163, 0.4);
+  background: linear-gradient(to top, rgba(0, 247, 163, 0.05), transparent);
+}
+
+/* 7. Motion Graphics & Animations (New) */
+
+@keyframes scan-move {
+  0% { top: 0%; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.scanline-moving {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--hud-primary);
+  box-shadow: 0 0 10px var(--hud-primary);
+  opacity: 0.5;
+  animation: scan-move 3s linear infinite;
+  pointer-events: none;
+  z-index: 15;
+}
+
+@keyframes hologram-flicker {
+  0% { opacity: 0.98; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.98; }
+  15% { opacity: 0.90; }
+  20% { opacity: 0.98; }
+  50% { opacity: 0.98; }
+  55% { opacity: 0.92; }
+  60% { opacity: 0.98; }
+  100% { opacity: 0.98; }
+}
+
+/* Apply subtle flicker to cards */
+.cyber-card {
+  animation: hologram-flicker 6s infinite;
+}
+
+@keyframes focus-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 247, 163, 0.2); border-color: var(--hud-accent); }
+  50% { box-shadow: 0 0 10px 0 rgba(0, 247, 163, 0.1); border-color: var(--hud-primary); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 247, 163, 0.2); border-color: var(--hud-accent); }
 }

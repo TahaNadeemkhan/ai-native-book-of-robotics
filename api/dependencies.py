@@ -34,6 +34,8 @@ async def get_current_user(request: Request) -> dict:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
+            
+    # print(f"DEBUG: Token found: {token[:10]}..." if token else "DEBUG: No token found")
 
     if not token:
         raise HTTPException(
@@ -43,9 +45,13 @@ async def get_current_user(request: Request) -> dict:
 
     context = await get_current_auth_context(token)
     if not context:
+        # print("DEBUG: Context decoding failed")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail="Invalid authentication token"
         )
         
     return context
+
+async def get_current_user_id(user_ctx: dict = Depends(get_current_user)) -> UUID:
+    return user_ctx["user_id"]
