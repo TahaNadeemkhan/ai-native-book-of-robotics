@@ -1,36 +1,52 @@
-import React from 'react';
+import React from "react";
 
 interface ProficiencySelectProps {
   label: string;
+
   value: string;
+
   onChange: (value: string) => void;
 }
 
-const levels = ['Beginner', 'Intermediate', 'Expert'];
+const levels = ["Beginner", "Intermediate", "Expert"];
 
-export default function ProficiencySelect({ label, value, onChange }: ProficiencySelectProps) {
+export default function ProficiencySelect({
+  label,
+  value,
+  onChange,
+}: ProficiencySelectProps) {
   return (
     <div className="mb-6">
-      <label className="block text-cb-muted-grey text-xs font-mono tracking-wider mb-2">
+      <label className="block text-[#9aa5b1] text-xs font-mono tracking-wider mb-3">
         {label}
       </label>
-      <div className="flex space-x-2">
+
+      <div className="flex gap-3">
         {levels.map((level) => {
           const isActive = value === level;
+
           return (
             <button
               key={level}
               type="button"
               onClick={() => onChange(level)}
               className={`
-                flex-1 py-3 px-2 border font-mono text-[10px] sm:text-xs uppercase tracking-widest transition-all duration-300
-                ${isActive 
-                  ? 'border-cb-neon-green bg-cb-neon-green/10 text-cb-neon-green shadow-[0_0_15px_rgba(0,247,163,0.2)]' 
-                  : 'border-cb-muted-grey/30 text-cb-muted-grey/50 hover:border-cb-cyan-accent hover:text-cb-cyan-accent hover:bg-cb-cyan-accent/5'
+
+                flex-1 py-3 px-2 border font-mono text-[10px] sm:text-xs uppercase tracking-widest transition-all duration-300 relative overflow-hidden group rounded
+
+                ${
+                  isActive
+                    ? "border-[#00f7a3] bg-[#00f7a3]/10 text-[#00f7a3] shadow-[0_0_15px_#00f7a3]"
+                    : "border-[#9aa5b1]/30 text-[#9aa5b1]/50 hover:border-[#00eaff] hover:text-[#00eaff] hover:bg-[#00eaff]/5"
                 }
+
               `}
             >
-              {level}
+              <span className="relative z-10">{level}</span>
+
+              {isActive && (
+                <div className="absolute inset-0 bg-[#00f7a3]/5 animate-pulse"></div>
+              )}
             </button>
           );
         })}
