@@ -32,8 +32,11 @@ router = APIRouter()
 COOKIE_NAME = "session_token"
 OAUTH_STATE_COOKIE = "oauth_state"
 
+# Determine if we are in production (Vercel)
+is_vercel_prod = os.getenv("VERCEL") == "1"
+
 # In production, secure=True (HTTPS only) and samesite='lax' or 'none'
-COOKIE_SECURE = False  # Set to True in Prod
+# COOKIE_SECURE = False  # Moved into dynamic setting
 COOKIE_SAMESITE = "lax" 
 
 @router.post("/sign-up/email")
@@ -163,8 +166,18 @@ async def sign_in_social(
             )
         elif provider == "google":
             # Construct Google Auth URL
-            # Hardcoded to ensure exact match
-            redirect_uri = "http://localhost:3000/api/auth/callback/google"
+            if settings.FRONTEND_URL:
+                redirect_uri = f"{settings.FRONTEND_URL}/api/auth/callback/google"
+            else:
+                base = str(request.base_url)
+                # Ensure we don't double stack /api/
+                if base.endswith("/api/"):
+                    base_root = base[:-len("/api/")]
+                else:
+                    base_root = base
+                redirect_uri = f"{base_root}/api/auth/callback/google"
+            
+            logging.info(f"DEBUG: Generated Google Redirect URI: {redirect_uri}")
             
             auth_url = (
                 f"https://accounts.google.com/o/oauth2/v2/auth?"
@@ -311,7 +324,21 @@ async def callback_github(request: Request, db: AsyncSession = Depends(get_db)):
         )
 
         # 5. Redirect to Frontend
-        frontend_url = settings.FRONTEND_URL or "http://localhost:3000"
+        # Dynamically determine frontend URL
+        if settings.FRONTEND_URL:
+            frontend_url = settings.FRONTEND_URL
+        else:
+            # If FRONTEND_URL is not explicitly set, derive it from the request
+            # This is robust for Vercel where the API is hosted under /api/
+            # and the frontend is at the root.
+            base = str(request.base_url)
+            # Remove /api/ from the base URL if present
+            if base.endswith("/api/"):
+                frontend_url = base[:-len("/api/")]
+            else:
+                frontend_url = base # Fallback if structure is different
+            logging.info(f"DEBUG: Derived Frontend URL: {frontend_url}")
+
         response = RedirectResponse(url=frontend_url)
         
         # SET SECURE COOKIE (Session)
@@ -320,7 +347,7 @@ async def callback_github(request: Request, db: AsyncSession = Depends(get_db)):
             value=jwt_token,
             httponly=True,
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            secure=COOKIE_SECURE, 
+            secure=(os.getenv("VERCEL") == "1"), # Set to True if deployed on Vercel
             samesite=COOKIE_SAMESITE,
             path="/"
         )
@@ -353,7 +380,17 @@ async def callback_google(request: Request, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Invalid OAuth state (CSRF check failed)")
 
         # 2. Exchange Code for Token
-        redirect_uri = "http://localhost:3000/api/auth/callback/google"
+        # Dynamically determine redirect_uri for Google OAuth
+        if settings.FRONTEND_URL:
+            google_redirect_uri = f"{settings.FRONTEND_URL}/api/auth/callback/google"
+        else:
+            # Derive from request base URL
+            base = str(request.base_url)
+            if base.endswith("/api/"):
+                google_redirect_uri = f"{base[:-len('/api/')]}/api/auth/callback/google"
+            else:
+                google_redirect_uri = f"{base}/api/auth/callback/google" # Fallback
+            logging.info(f"DEBUG: Derived Google Redirect URI: {google_redirect_uri}")
         
         async with httpx.AsyncClient() as client:
             token_resp = await client.post(
@@ -363,7 +400,7 @@ async def callback_google(request: Request, db: AsyncSession = Depends(get_db)):
                     "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
                     "code": code,
                     "grant_type": "authorization_code",
-                    "redirect_uri": redirect_uri
+                    "redirect_uri": google_redirect_uri
                 }
             )
             token_resp.raise_for_status()
@@ -392,7 +429,16 @@ async def callback_google(request: Request, db: AsyncSession = Depends(get_db)):
         )
 
         # 5. Redirect to Frontend
-        frontend_url = settings.FRONTEND_URL or "http://localhost:3000"
+        if settings.FRONTEND_URL:
+            frontend_url = settings.FRONTEND_URL
+        else:
+            base = str(request.base_url)
+            if base.endswith("/api/"):
+                frontend_url = base[:-len("/api/")]
+            else:
+                frontend_url = base
+            logging.info(f"DEBUG: Derived Frontend URL (post Google Auth): {frontend_url}")
+
         response = RedirectResponse(url=frontend_url)
         
         # SET SECURE COOKIE (Session)
@@ -401,7 +447,7 @@ async def callback_google(request: Request, db: AsyncSession = Depends(get_db)):
             value=jwt_token,
             httponly=True,
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            secure=COOKIE_SECURE, 
+            secure=(os.getenv("VERCEL") == "1"), 
             samesite=COOKIE_SAMESITE,
             path="/"
         )
