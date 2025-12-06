@@ -40,72 +40,77 @@ Our deep reconnaissance has identified why most deployments fail. **Read this be
 
 ---
 
-## 🗺️ The Battle Plan
+## 🗺️ The Strategy: Unified Deployment
 
-1.  **Unified Config:** We have created `vercel.json` to tell Vercel how to handle both Python (Backend) and React (Frontend) in one repo.
-2.  **Database:** Ensure Neon (Postgres) and Qdrant (Vector DB) are ready.
-3.  **Deploy:** Push to GitHub -> Connect to Vercel -> Boom. 💥
+We are using a **Monorepo Deployment** strategy on Vercel. This means Vercel will build and host both your Python Backend and Docusaurus Frontend from the same repository at the same time.
+
+*   **Frontend:** Served at `https://<your-app>.vercel.app`
+*   **Backend:** Served at `https://<your-app>.vercel.app/api/...`
+
+You do **NOT** need to deploy them separately. One push does it all.
 
 ---
 
-## Phase 1: Preparation
+## Phase 1: Preparation (Local)
 
 1.  **Push Code to GitHub:**
-    *   Ensure `api/index.py` and `vercel.json` are pushed to your `master` branch.
+    *   Ensure your `master` branch is up to date.
     ```bash
     git add .
-    git commit -m "chore: prepare for vercel deployment"
+    git commit -m "chore: ready for deployment"
     git push origin master
     ```
 
-## Phase 2: Vercel Deployment
-
-**Goal:** Get the HUD running at `https://<your-app>.vercel.app`.
+## Phase 2: The Launch (Vercel)
 
 1.  **Sign up/Log in:** Go to [vercel.com](https://vercel.com).
 2.  **Add New Project:**
     *   Click "Add New..." -> "Project".
     *   Select your GitHub repository (`ai-native-book-of-robotics`).
 3.  **Configure Project:**
-    *   **Framework Preset:** Vercel might detect "Other" or "Docusaurus". It's fine. Our `vercel.json` handles the heavy lifting.
-    *   **Root Directory:** Keep it as `.` (Root). **Do NOT change this to docusaurus or api.**
+    *   **Framework Preset:** Select **"Other"**. (Do NOT select Docusaurus).
+    *   **Root Directory:** Keep it as `.` (The default Root).
+    *   **Build/Output Settings:** Leave them empty/default. Our `vercel.json` handles this.
 4.  **Environment Variables:**
-    *   Copy these strictly from your `.env` (and adjust for production):
-        *   `DATABASE_URL`: (Your Neon DB URL - ensure `sslmode=require`)
-        *   `SECRET_KEY`: (Generate a strong random string)
-        *   `BETTER_AUTH_SECRET`: (Generate a strong random string)
+    *   Add these **Key-Value pairs** (copy values from your `.env` or generate new secrets):
+        *   `DATABASE_URL`: (Your Neon DB URL)
+        *   `SECRET_KEY`: (Random string for security)
+        *   `BETTER_AUTH_SECRET`: (Random string for security)
         *   `QDRANT_HOST`: (Your Qdrant Host URL)
         *   `QDRANT_API_KEY`: (Your Qdrant API Key)
         *   `QDRANT_COLLECTION_NAME`: `ai_native_book_platform`
         *   `OPENAI_API_KEY`: (Your OpenAI Key)
         *   `GITHUB_CLIENT_ID`: (Production GitHub App Client ID)
         *   `GITHUB_CLIENT_SECRET`: (Production GitHub App Client Secret)
-        *   `GITHUB_REDIRECT_URI`: `https://<your-vercel-url>.vercel.app/api/auth/callback/github` **(Wait for the URL after first deploy if needed, or guess it: project-name.vercel.app)**
+        *   `GITHUB_REDIRECT_URI`: `https://<your-project-name>.vercel.app/api/auth/callback/github` (**Crucial:** Must match your Vercel domain)
         *   `ALGORITHM`: `HS256`
         *   `ACCESS_TOKEN_EXPIRE_MINUTES`: `30`
         *   `PYTHON_VERSION`: `3.12`
 
 5.  **Deploy:** Click "Deploy".
 
-## Phase 3: Post-Deployment Wiring
+## Phase 3: Final Wiring (GitHub OAuth)
 
-1.  **GitHub OAuth Update:**
-    *   Once deployed, you'll get a domain like `https://ai-native-book.vercel.app`.
-    *   Go to your **GitHub OAuth App** settings.
-    *   **Homepage URL:** `https://ai-native-book.vercel.app`
-    *   **Callback URL:** `https://ai-native-book.vercel.app/api/auth/callback/github`
-    *   Update the `GITHUB_REDIRECT_URI` in Vercel Environment Variables if you guessed wrong initially. (Redeploy if changed).
-
-2.  **CORS (Optional but Good):**
-    *   Since Backend and Frontend are on the *same domain* now, CORS issues are mostly eliminated! 🚀
-    *   However, if you access `/api` from elsewhere, update `api/main.py` origins.
+1.  **Get Your URL:**
+    *   Once Vercel finishes, copy your new domain (e.g., `https://ai-native-book-123.vercel.app`).
+2.  **Update GitHub App:**
+    *   Go to your **GitHub OAuth App** settings (on github.com).
+    *   **Homepage URL:** `https://ai-native-book-123.vercel.app`
+    *   **Callback URL:** `https://ai-native-book-123.vercel.app/api/auth/callback/github`
+3.  **Verify Vercel Env Var:**
+    *   If you guessed the URL wrong in Step 2, go back to Vercel -> Settings -> Environment Variables.
+    *   Update `GITHUB_REDIRECT_URI` to match the actual URL.
+    *   Redeploy (Project -> Deployments -> Redeploy) if you changed variables.
 
 ## 🛑 Verification Checklist
 
-- [ ] **Frontend:** `https://<your-app>.vercel.app` loads the Docusaurus site.
-- [ ] **Backend:** `https://<your-app>.vercel.app/api/docs` loads the FastAPI Swagger UI.
-- [ ] **Auth:** Clicking "System Link" logs you in via GitHub.
-- [ ] **Search:** The Drone widget responds to queries.
+- [ ] **Frontend:** Open `https://<your-app>.vercel.app`. Does the Docusaurus site load?
+- [ ] **Backend:** Open `https://<your-app>.vercel.app/api/`. Do you see `{"message": "Welcome..."}`?
+- [ ] **Login:** Click "System Link" (Login). Does it redirect to GitHub and back successfully?
+- [ ] **AI:** Does the Drone widget answer questions?
+
+---
+**Mission Complete.** 🚀
 
 
 ## Phase 2: Frontend Deployment (Vercel)
