@@ -35,8 +35,11 @@ OAUTH_STATE_COOKIE = "oauth_state"
 # Determine if we are in production (Vercel)
 is_vercel_prod = os.getenv("VERCEL") == "1"
 
-# In production, secure=True (HTTPS only) and samesite='lax' or 'none'
-# COOKIE_SECURE = False  # Moved into dynamic setting
+# Cookie settings based on environment
+COOKIE_SECURE = is_vercel_prod  # True on Vercel (HTTPS), False locally
+# Use "none" for OAuth state cookie to survive cross-site redirects from GitHub
+OAUTH_SAMESITE = "none" if is_vercel_prod else "lax"
+# Use "lax" for session cookie (safer for normal usage)
 COOKIE_SAMESITE = "lax" 
 
 @router.post("/sign-up/email")
@@ -202,11 +205,11 @@ async def sign_in_social(
             value=state,
             httponly=True,
             max_age=600, # 10 minutes
-            secure=(os.getenv("VERCEL") == "1"),
-            samesite=COOKIE_SAMESITE,
+            secure=COOKIE_SECURE,
+            samesite=OAUTH_SAMESITE,
             path="/"
         )
-            
+
         return response
     except Exception as e:
         logging.error(f"Social Login Error: {str(e)}")
@@ -266,11 +269,11 @@ async def sign_in_github_direct(request: Request):
         value=state,
         httponly=True,
         max_age=600,
-        secure=(os.getenv("VERCEL") == "1"),
-        samesite=COOKIE_SAMESITE,
+        secure=COOKIE_SECURE,
+        samesite=OAUTH_SAMESITE,
         path="/"
     )
-    
+
     return response
 
 
@@ -354,21 +357,21 @@ async def callback_github(request: Request, db: AsyncSession = Depends(get_db)):
             logging.info(f"DEBUG: Derived Frontend URL: {frontend_url}")
 
         response = RedirectResponse(url=frontend_url)
-        
+
         # SET SECURE COOKIE (Session)
         response.set_cookie(
             key=COOKIE_NAME,
             value=jwt_token,
             httponly=True,
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            secure=(os.getenv("VERCEL") == "1"), # Set to True if deployed on Vercel
+            secure=COOKIE_SECURE,
             samesite=COOKIE_SAMESITE,
             path="/"
         )
-        
+
         # Clear State Cookie
-        response.delete_cookie(OAUTH_STATE_COOKIE)
-        
+        response.delete_cookie(OAUTH_STATE_COOKIE, path="/")
+
         return response
 
     except Exception as e:
@@ -454,21 +457,21 @@ async def callback_google(request: Request, db: AsyncSession = Depends(get_db)):
             logging.info(f"DEBUG: Derived Frontend URL (post Google Auth): {frontend_url}")
 
         response = RedirectResponse(url=frontend_url)
-        
+
         # SET SECURE COOKIE (Session)
         response.set_cookie(
             key=COOKIE_NAME,
             value=jwt_token,
             httponly=True,
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            secure=(os.getenv("VERCEL") == "1"), 
+            secure=COOKIE_SECURE,
             samesite=COOKIE_SAMESITE,
             path="/"
         )
-        
+
         # Clear State Cookie
-        response.delete_cookie(OAUTH_STATE_COOKIE)
-        
+        response.delete_cookie(OAUTH_STATE_COOKIE, path="/")
+
         return response
 
     except Exception as e:
