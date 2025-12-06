@@ -1,6 +1,10 @@
 import logging
 import secrets
 import os
+import hmac
+import hashlib
+import time
+import base64
 from datetime import timedelta
 from typing import Optional, Dict, Any
 from uuid import uuid4
@@ -15,7 +19,7 @@ from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_500_INTERNAL_SERVER_ERR
 import httpx
 from api.dependencies import get_db
 from api.services.auth_service import (
-    authenticate_github_user_and_create_token, 
+    authenticate_github_user_and_create_token,
     is_authenticated,
     authenticate_user,
     get_password_hash,
@@ -30,17 +34,66 @@ router = APIRouter()
 
 # Production-ready Cookie Settings
 COOKIE_NAME = "session_token"
-OAUTH_STATE_COOKIE = "oauth_state"
 
 # Determine if we are in production (Vercel)
 is_vercel_prod = os.getenv("VERCEL") == "1"
 
 # Cookie settings based on environment
 COOKIE_SECURE = is_vercel_prod  # True on Vercel (HTTPS), False locally
-# Use "none" for OAuth state cookie to survive cross-site redirects from GitHub
-OAUTH_SAMESITE = "none" if is_vercel_prod else "lax"
-# Use "lax" for session cookie (safer for normal usage)
-COOKIE_SAMESITE = "lax" 
+COOKIE_SAMESITE = "lax"
+
+# Stateless CSRF State Functions (no cookies needed)
+STATE_MAX_AGE = 600  # 10 minutes
+
+def generate_oauth_state() -> str:
+    """Generate a signed, timestamped state for OAuth CSRF protection."""
+    timestamp = str(int(time.time()))
+    nonce = secrets.token_urlsafe(16)
+    data = f"{timestamp}.{nonce}"
+
+    # Sign with SECRET_KEY
+    secret = settings.SECRET_KEY or "fallback-secret-key"
+    signature = hmac.new(
+        secret.encode(),
+        data.encode(),
+        hashlib.sha256
+    ).hexdigest()[:16]
+
+    state = f"{data}.{signature}"
+    return base64.urlsafe_b64encode(state.encode()).decode()
+
+def verify_oauth_state(state: str) -> bool:
+    """Verify the signed OAuth state."""
+    try:
+        decoded = base64.urlsafe_b64decode(state.encode()).decode()
+        parts = decoded.split(".")
+        if len(parts) != 3:
+            return False
+
+        timestamp, nonce, signature = parts
+
+        # Verify timestamp (within STATE_MAX_AGE)
+        if int(time.time()) - int(timestamp) > STATE_MAX_AGE:
+            logging.warning("OAuth state expired")
+            return False
+
+        # Verify signature
+        data = f"{timestamp}.{nonce}"
+        secret = settings.SECRET_KEY or "fallback-secret-key"
+        expected_sig = hmac.new(
+            secret.encode(),
+            data.encode(),
+            hashlib.sha256
+        ).hexdigest()[:16]
+
+        if not hmac.compare_digest(signature, expected_sig):
+            logging.warning("OAuth state signature mismatch")
+            return False
+
+        return True
+    except Exception as e:
+        logging.error(f"State verification error: {e}")
+        return False 
 
 @router.post("/sign-up/email")
 async def sign_up_email(
@@ -141,24 +194,24 @@ async def sign_in_email(
 
 @router.post("/sign-in/social")
 async def sign_in_social(
-    request: Request, 
+    request: Request,
     body: Dict[str, Any] = Body(...)
 ):
     """
     Better-Auth Compatible Endpoint: Initiates Social Login.
     Client sends: { "provider": "github", "callbackURL": "..." }
     We return: { "url": "https://github.com/login/..." }
+    Uses stateless CSRF protection (no cookies needed).
     """
     try:
         provider = body.get("provider")
         if provider not in ["github", "google"]:
             raise HTTPException(status_code=400, detail="Unsupported provider")
 
-        # 1. Generate robust state
-        state = secrets.token_urlsafe(16)
-        
+        # Generate signed stateless state (no cookie needed)
+        state = generate_oauth_state()
+
         if provider == "github":
-            # 2. Construct GitHub Auth URL manually to have full control
             if settings.GITHUB_REDIRECT_URI:
                 redirect_uri = settings.GITHUB_REDIRECT_URI
             else:
@@ -177,7 +230,6 @@ async def sign_in_social(
                 f"state={state}"
             )
         elif provider == "google":
-            # Construct Google Auth URL
             if settings.FRONTEND_URL:
                 redirect_uri = f"{settings.FRONTEND_URL}/api/auth/callback/google"
             else:
@@ -187,7 +239,7 @@ async def sign_in_social(
                 else:
                     base_root = base
                 redirect_uri = f"{base_root}/api/auth/callback/google"
-            
+
             auth_url = (
                 f"https://accounts.google.com/o/oauth2/v2/auth?"
                 f"client_id={os.environ.get('GOOGLE_CLIENT_ID')}&"
@@ -196,21 +248,10 @@ async def sign_in_social(
                 f"scope=email%20profile&"
                 f"state={state}"
             )
-        
-        # 3. Return JSON with URL and Set State Cookie
-        response = JSONResponse(content={"url": auth_url, "redirect": True})
-        
-        response.set_cookie(
-            key=OAUTH_STATE_COOKIE,
-            value=state,
-            httponly=True,
-            max_age=600, # 10 minutes
-            secure=COOKIE_SECURE,
-            samesite=OAUTH_SAMESITE,
-            path="/"
-        )
 
-        return response
+        # Return JSON with URL (no cookie needed for stateless state)
+        return JSONResponse(content={"url": auth_url, "redirect": True})
+
     except Exception as e:
         logging.error(f"Social Login Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Social Login Failed: {str(e)}")
@@ -219,13 +260,13 @@ async def sign_in_social(
 @router.get("/sign-in/github")
 async def sign_in_github_direct(request: Request):
     """
-    Robust Browser-based Login.
-    Redirects directly to GitHub, ensuring cookies stick (avoids AJAX/Fetch issues).
+    Browser-based Login with stateless CSRF protection.
+    Redirects directly to GitHub without needing cookies for state.
     """
-    # 1. Generate robust state
-    state = secrets.token_urlsafe(16)
-    
-    # 2. Construct GitHub Auth URL
+    # Generate signed stateless state
+    state = generate_oauth_state()
+
+    # Construct GitHub Auth URL
     if settings.GITHUB_REDIRECT_URI:
         redirect_uri = settings.GITHUB_REDIRECT_URI
     else:
@@ -235,9 +276,9 @@ async def sign_in_github_direct(request: Request):
         else:
             base_root = base
         redirect_uri = f"{base_root}/api/auth/callback/github"
-    
+
     logging.info(f"DEBUG: Using Redirect URI: {redirect_uri}")
-    
+
     auth_url = (
         f"https://github.com/login/oauth/authorize?"
         f"client_id={settings.GITHUB_CLIENT_ID}&"
@@ -245,56 +286,28 @@ async def sign_in_github_direct(request: Request):
         f"scope=user:email&"
         f"state={state}"
     )
-    
-    logging.info(f"DEBUG: Generated Auth URL: {auth_url}")
-    
-    # 3. Return HTML with Redirect (Forces Cookie Set)
-    html_content = f"""
-    <html>
-        <head>
-            <title>Redirecting...</title>
-            <meta http-equiv="refresh" content="0;url={auth_url}">
-        </head>
-        <body>
-            <p>Redirecting to GitHub...</p>
-            <script>window.location.href = "{auth_url}"</script>
-        </body>
-    </html>
-    """
-    
-    response = HTMLResponse(content=html_content)
-    
-    response.set_cookie(
-        key=OAUTH_STATE_COOKIE,
-        value=state,
-        httponly=True,
-        max_age=600,
-        secure=COOKIE_SECURE,
-        samesite=OAUTH_SAMESITE,
-        path="/"
-    )
 
-    return response
+    # Direct redirect (no cookie needed for stateless state)
+    return RedirectResponse(url=auth_url)
 
 
 @router.get("/callback/github")
 async def callback_github(request: Request, db: AsyncSession = Depends(get_db)):
     """
-    Handles GitHub OAuth callback manually.
+    Handles GitHub OAuth callback with stateless CSRF verification.
     Sets a Secure HttpOnly Cookie and Redirects to Frontend.
     """
     try:
-        # 1. Verify State
+        # 1. Verify State (stateless - no cookie needed)
         code = request.query_params.get("code")
         state = request.query_params.get("state")
-        saved_state = request.cookies.get(OAUTH_STATE_COOKIE)
-        
+
         if not code or not state:
-             raise HTTPException(status_code=400, detail="Missing code or state")
-             
-        # If state check fails, log it but maybe proceed if dev environment? No, security first.
-        if state != saved_state:
-            logging.error(f"State mismatch. Received: {state}, Saved: {saved_state}")
+            raise HTTPException(status_code=400, detail="Missing code or state")
+
+        # Verify signed state (stateless CSRF protection)
+        if not verify_oauth_state(state):
+            logging.error(f"Invalid OAuth state: {state}")
             raise HTTPException(status_code=400, detail="Invalid OAuth state (CSRF check failed)")
 
         # 2. Exchange Code for Token
@@ -369,9 +382,6 @@ async def callback_github(request: Request, db: AsyncSession = Depends(get_db)):
             path="/"
         )
 
-        # Clear State Cookie
-        response.delete_cookie(OAUTH_STATE_COOKIE, path="/")
-
         return response
 
     except Exception as e:
@@ -381,19 +391,19 @@ async def callback_github(request: Request, db: AsyncSession = Depends(get_db)):
 @router.get("/callback/google")
 async def callback_google(request: Request, db: AsyncSession = Depends(get_db)):
     """
-    Handles Google OAuth callback manually.
+    Handles Google OAuth callback with stateless CSRF verification.
     """
     try:
-        # 1. Verify State
+        # 1. Verify State (stateless - no cookie needed)
         code = request.query_params.get("code")
         state = request.query_params.get("state")
-        saved_state = request.cookies.get(OAUTH_STATE_COOKIE)
-        
+
         if not code or not state:
-             raise HTTPException(status_code=400, detail="Missing code or state")
-             
-        if state != saved_state:
-            logging.error(f"State mismatch. Received: {state}, Saved: {saved_state}")
+            raise HTTPException(status_code=400, detail="Missing code or state")
+
+        # Verify signed state (stateless CSRF protection)
+        if not verify_oauth_state(state):
+            logging.error(f"Invalid OAuth state: {state}")
             raise HTTPException(status_code=400, detail="Invalid OAuth state (CSRF check failed)")
 
         # 2. Exchange Code for Token
@@ -468,9 +478,6 @@ async def callback_google(request: Request, db: AsyncSession = Depends(get_db)):
             samesite=COOKIE_SAMESITE,
             path="/"
         )
-
-        # Clear State Cookie
-        response.delete_cookie(OAUTH_STATE_COOKIE, path="/")
 
         return response
 
