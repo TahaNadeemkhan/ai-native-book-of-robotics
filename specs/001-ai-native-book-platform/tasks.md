@@ -119,10 +119,10 @@
 - [x] T041 [RAG] Implement `/drone/chat` (chatbot) API endpoint for general RAG Q&A in `api/routes/drone.py`.
 - [x] T042 [RAG] **Verification:** Send a test query to `/drone/chat` and verify the answer is based on the **existing book content** inside Qdrant.
 - [x] T043 [RAG] Create `DroneWidget.tsx` floating component in `docusaurus/src/components/DroneWidget.tsx`.
-- [ ] T044 [RAG] Implement context menu integration for "Scan with Drone" functionality in Docusaurus (via `docusaurus/src/theme/Root.js` or global wrapper).
-- [ ] T045 [RAG] Implement `/drone/scan` API endpoint for contextual scanning of highlighted text in `api/routes/drone.py`.
-- [ ] T046 [RAG] **Verification:** Highlight text on a Docusaurus page, select "Scan with Drone", and verify a contextual RAG answer is displayed in `DroneWidget.tsx`.
+- [x] T044 [RAG] Implement context menu integration for "Scan with Drone" functionality in Docusaurus (via `docusaurus/src/theme/Root.js` or global wrapper).
+- [x] T045 [RAG] Implement `/drone/scan` API endpoint for contextual scanning of highlighted text in `api/routes/drone.py`.
+- [x] T046 [RAG] **Verification:** Highlight text on a Docusaurus page, select "Scan with Drone", and verify a contextual RAG answer is displayed in `DroneWidget.tsx`.
 
 ## CHECKPOINT 5: The Drone Integration (RAG)
-- [ ] Manual Verification: Application successfully connects to the pre-indexed Qdrant collection, OpenAI Agent retrieves correct info, and the Drone Widget works.
-- [ ] Git Commit: "feat: complete phase 5 - drone integration (existing RAG data)"
+- [x] Manual Verification: Application successfully connects to the pre-indexed Qdrant collection, OpenAI Agent retrieves correct info, and the Drone Widget works.
+- [x] Git Commit: "feat: complete phase 5 - drone integration (existing RAG data)"
