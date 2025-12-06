@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from agents import (
     Agent,
@@ -11,27 +11,57 @@ from agents import (
 )
 from api.config import settings
 from openai import AsyncOpenAI
-from qdrant_client import QdrantClient, models
-
-# Initialize Qdrant Client
-# QdrantClient handles connection pooling internally
-qdrant = QdrantClient(
-    url=settings.QDRANT_HOST,
-    api_key=settings.QDRANT_API_KEY,
-)
+from qdrant_client import QdrantClient
 
 set_tracing_disabled(disabled=True)
-# Initialize OpenAI Client for Embeddings & Agent (Gemini)
-ai_client = AsyncOpenAI(
-    api_key=settings.GEMINI_API_KEY,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-)
+
+# Lazy initialization to prevent crashes if env vars missing
+_qdrant_client: Optional[QdrantClient] = None
+_ai_client: Optional[AsyncOpenAI] = None
+
+def get_qdrant_client() -> Optional[QdrantClient]:
+    """Lazy initialization of Qdrant client."""
+    global _qdrant_client
+    if _qdrant_client is None:
+        if settings.QDRANT_HOST and settings.QDRANT_API_KEY:
+            try:
+                _qdrant_client = QdrantClient(
+                    url=settings.QDRANT_HOST,
+                    api_key=settings.QDRANT_API_KEY,
+                )
+                logging.info("Qdrant client initialized successfully")
+            except Exception as e:
+                logging.error(f"Failed to initialize Qdrant client: {e}")
+                return None
+        else:
+            logging.warning("QDRANT_HOST or QDRANT_API_KEY not set")
+            return None
+    return _qdrant_client
+
+def get_ai_client() -> Optional[AsyncOpenAI]:
+    """Lazy initialization of AI client."""
+    global _ai_client
+    if _ai_client is None:
+        if settings.GEMINI_API_KEY:
+            _ai_client = AsyncOpenAI(
+                api_key=settings.GEMINI_API_KEY,
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            )
+            logging.info("AI client initialized successfully")
+        else:
+            logging.warning("GEMINI_API_KEY not set")
+            return None
+    return _ai_client
 
 
 async def get_embedding(text: str) -> List[float]:
     """
     Generates an embedding vector for the given text using Gemini.
     """
+    ai_client = get_ai_client()
+    if not ai_client:
+        raise ValueError("AI client not initialized - check GEMINI_API_KEY")
+
     try:
         response = await ai_client.embeddings.create(
             model="text-embedding-004", input=text
@@ -46,6 +76,11 @@ async def search_knowledge_base(query: str, top_k: int = 3) -> List[Dict]:
     """
     Searches Qdrant for relevant context chunks.
     """
+    qdrant = get_qdrant_client()
+    if not qdrant:
+        logging.warning("Qdrant client not available - skipping RAG search")
+        return []
+
     try:
         # 1. Get Query Embedding
         vector = await get_embedding(query)
@@ -65,7 +100,7 @@ async def search_knowledge_base(query: str, top_k: int = 3) -> List[Dict]:
                 {
                     "content": res.payload.get("content", ""),
                     "score": res.score,
-                    "metadata": res.payload,  # Include other metadata if available
+                    "metadata": res.payload,
                 }
             )
 
@@ -73,12 +108,10 @@ async def search_knowledge_base(query: str, top_k: int = 3) -> List[Dict]:
 
     except Exception as e:
         logging.error(f"RAG Search Error: {e}")
-        # Return empty list on error to allow graceful degradation (chat without context)
         return []
 
 
 # --- AGENT SETUP ---
-
 
 @function_tool
 async def retrieve_robotics_context(query: str) -> str:
@@ -90,34 +123,52 @@ async def retrieve_robotics_context(query: str) -> str:
     if not chunks:
         return "No relevant data found in the knowledge base."
 
-    # Format for the Agent
     result_text = "Found the following context from the Knowledge Base:\n"
     for i, chunk in enumerate(chunks):
         result_text += f"--- SOURCE {i + 1} ---\n{chunk['content']}\n"
     return result_text
 
 
-chat_model = OpenAIChatCompletionsModel(
-    openai_client=ai_client,
-    model="gemini-2.0-flash",
-)
+# Lazy agent initialization
+_drone_agent: Optional[Agent] = None
 
-drone_agent = Agent(
-    name="Support Drone",
-    instructions=(
-        "You are a Cybernetic Support Drone for the 'Physical AI & Humanoid Robotics' platform. "
-        "Your tone is robotic, precise, and helpful. "
-        "\n\nCORE PROTOCOLS:\n"
-        "1. KNOWLEDGE RETRIEVAL: For technical queries, ALWAYS use `retrieve_robotics_context` first. "
-        "   - If context is found: Use it to answer."
-        "   - If context is MISSING but the topic is relevant (Robotics, AI, The Book's Purpose): Answer using your internal general knowledge, but prefix with '[GENERAL KNOWLEDGE DB]'. "
-        "   - If the topic is IRRELEVANT (e.g., cooking, sports): Decline ('Outside operational scope').\n"
-        "2. LINGUISTIC MODULES: You are AUTHORIZED to Translate (especially to Urdu) and Summarize text upon request. No external tool is needed for these tasks.\n"
-        "3. FORMAT: Keep answers concise, technical, and formatted for a HUD display."
-    ),
-    tools=[retrieve_robotics_context],
-    model=chat_model,
-)
+def get_drone_agent() -> Optional[Agent]:
+    """Lazy initialization of drone agent."""
+    global _drone_agent
+    if _drone_agent is None:
+        ai_client = get_ai_client()
+        if not ai_client:
+            logging.error("Cannot create drone agent - AI client not available")
+            return None
+
+        try:
+            chat_model = OpenAIChatCompletionsModel(
+                openai_client=ai_client,
+                model="gemini-2.0-flash",
+            )
+
+            _drone_agent = Agent(
+                name="Support Drone",
+                instructions=(
+                    "You are a Cybernetic Support Drone for the 'Physical AI & Humanoid Robotics' platform. "
+                    "Your tone is robotic, precise, and helpful. "
+                    "\n\nCORE PROTOCOLS:\n"
+                    "1. KNOWLEDGE RETRIEVAL: For technical queries, ALWAYS use `retrieve_robotics_context` first. "
+                    "   - If context is found: Use it to answer."
+                    "   - If context is MISSING but the topic is relevant (Robotics, AI, The Book's Purpose): Answer using your internal general knowledge, but prefix with '[GENERAL KNOWLEDGE DB]'. "
+                    "   - If the topic is IRRELEVANT (e.g., cooking, sports): Decline ('Outside operational scope').\n"
+                    "2. LINGUISTIC MODULES: You are AUTHORIZED to Translate (especially to Urdu) and Summarize text upon request. No external tool is needed for these tasks.\n"
+                    "3. FORMAT: Keep answers concise, technical, and formatted for a HUD display."
+                ),
+                tools=[retrieve_robotics_context],
+                model=chat_model,
+            )
+            logging.info("Drone agent initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize drone agent: {e}")
+            return None
+
+    return _drone_agent
 
 
 async def run_drone_agent(user_query: str, history: List[Dict] = []) -> str:
@@ -141,9 +192,13 @@ async def run_drone_agent(user_query: str, history: List[Dict] = []) -> str:
             f"CURRENT USER QUERY: {user_query}"
         )
 
+        drone_agent = get_drone_agent()
+        if not drone_agent:
+            return "Critical System Failure: Agent not initialized. Check server logs for missing environment variables (GEMINI_API_KEY, QDRANT_HOST, etc.)."
+
         # Runner.run is the async version
         result = await Runner.run(drone_agent, input=full_prompt)
         return result.final_output
     except Exception as e:
         logging.error(f"Agent Execution Error: {e}")
-        return "Critical System Failure: Agent Offline."
+        return "Critical System Failure: Agent Offline. (Error during execution)"
