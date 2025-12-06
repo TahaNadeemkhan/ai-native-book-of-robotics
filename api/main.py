@@ -52,7 +52,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
-app.include_router(users_router.router, prefix="/users", tags=["users"])
+app.include_router(users_router.router, prefix="/api/users", tags=["users"])
 app.include_router(ai_router.router, prefix="/api/ai", tags=["ai"])
 app.include_router(drone_router.router, prefix="/api/drone", tags=["drone"])
 

@@ -42,7 +42,7 @@ const AuthToggle = () => {
     const checkOnboarding = async () => {
       if (session && !isPending) {
         try {
-          const res = await fetch("/users/me/onboarding", {
+          const res = await fetch("/api/users/me/onboarding", {
             credentials: "include",
           });
           if (res.ok) {
