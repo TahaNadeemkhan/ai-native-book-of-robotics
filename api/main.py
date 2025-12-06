@@ -11,6 +11,7 @@ from api.services.auth_service import is_authenticated
 from .routes import auth as auth_router
 from .routes import users as users_router
 from .routes import ai as ai_router
+from .routes import drone as drone_router
 
 # Explicitly configure logging
 logger = logging.getLogger()
@@ -47,6 +48,7 @@ app.add_middleware(
 app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users_router.router, prefix="/users", tags=["users"])
 app.include_router(ai_router.router, prefix="/api/ai", tags=["ai"])
+app.include_router(drone_router.router, prefix="/api/drone", tags=["drone"])
 
 
 @app.get("/")

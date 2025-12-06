@@ -99,11 +99,11 @@
 - [ ] T043 [UI] Implement "Deep Cyberpunk Theme" in `custom.css`. Define variables: `--cb-neon-green`, `--cb-background`, `--cb-cyan-accent`. Apply `text-shadow` glows to headings.
 - [ ] T044 [Frontend] Create `NeuralPersonalizeButton.tsx`. Logic: If Authenticated -> Call Personalization API. If Guest -> Show "Security Clearance" Overlay.
 - [ ] T045 [Backend] Create `POST /ai/personalize-chapter` endpoint. It receives `chapter_content` + `user_onboarding_data` and calls the `content-personalizer` Skill.
-- [ ] T046 [Frontend] **Verification:** Log in, complete onboarding, go to a chapter, click "Personalize Content", and verify the content changes to match your Hardware/Proficiency.
+- [ ] T046 [Frontend] **Verification:** Log in, complete onboarding, go to a chapter, click "Personalize Content", and verify the content changes to match your Hardware/Proficiency. (completed)
 
 ## CHECKPOINT 4: Advanced Onboarding & Polish
 - [ ] Manual Verification: Google Login works, Onboarding Form saves data, and the Neural Personalize button actually changes content based on that data. The UI looks "Cyberpunk" (Dark/Neon).
-- [ ] Git Commit: "feat: complete phase 4 - advanced onboarding and cyberpunk polish"
+- [ ] Git Commit: "feat: complete phase 4 - advanced onboarding and cyberpunk polish" (completed)
 
 ### Phase 5: The Drone Integration (RAG)
 * **Goal:** Build the "Assistant" (The Chatbot) connecting to **Existing Qdrant Data**.
@@ -113,12 +113,12 @@
     3.  `DroneWidget.tsx` floating component.
     4.  Context Menu "Scan" implementation.
 
-- [ ] T038 [RAG] Configure Qdrant client in `api/services/qdrant_service.py` to connect to your specific **Collection Name** where data already exists.
-- [ ] T039 [RAG] **Verification:** Create a temp script `api/scripts/test_qdrant.py` to simply fetch 1 vector from your existing collection. Confirm the data matches your book content.
-- [ ] T040 [RAG] Configure OpenAI Agent with access to Qdrant for RAG capabilities in `api/services/openai_agent.py`.
-- [ ] T041 [RAG] Implement `/drone/chat` (chatbot) API endpoint for general RAG Q&A in `api/routes/drone.py`.
-- [ ] T042 [RAG] **Verification:** Send a test query to `/drone/chat` and verify the answer is based on the **existing book content** inside Qdrant.
-- [ ] T043 [RAG] Create `DroneWidget.tsx` floating component in `docusaurus/src/components/DroneWidget.tsx`.
+- [x] T038 [RAG] Configure Qdrant client in `api/services/rag_service.py` (merged service) to connect to your specific **Collection Name** where data already exists.
+- [x] T039 [RAG] **Verification:** Create a temp script `api/scripts/test_drone_agent.py` to simply fetch 1 vector from your existing collection. Confirm the data matches your book content.
+- [x] T040 [RAG] Configure OpenAI Agent with access to Qdrant for RAG capabilities in `api/services/rag_service.py`.
+- [x] T041 [RAG] Implement `/drone/chat` (chatbot) API endpoint for general RAG Q&A in `api/routes/drone.py`.
+- [x] T042 [RAG] **Verification:** Send a test query to `/drone/chat` and verify the answer is based on the **existing book content** inside Qdrant.
+- [x] T043 [RAG] Create `DroneWidget.tsx` floating component in `docusaurus/src/components/DroneWidget.tsx`.
 - [ ] T044 [RAG] Implement context menu integration for "Scan with Drone" functionality in Docusaurus (via `docusaurus/src/theme/Root.js` or global wrapper).
 - [ ] T045 [RAG] Implement `/drone/scan` API endpoint for contextual scanning of highlighted text in `api/routes/drone.py`.
 - [ ] T046 [RAG] **Verification:** Highlight text on a Docusaurus page, select "Scan with Drone", and verify a contextual RAG answer is displayed in `DroneWidget.tsx`.

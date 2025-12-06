@@ -1,10 +1,17 @@
+import json
 import logging
-from typing import List, Dict
+from typing import Dict, List
 
-from qdrant_client import QdrantClient, models
-from openai import AsyncOpenAI
-
+from agents import (
+    Agent,
+    OpenAIChatCompletionsModel,
+    Runner,
+    function_tool,
+    set_tracing_disabled,
+)
 from api.config import settings
+from openai import AsyncOpenAI
+from qdrant_client import QdrantClient, models
 
 # Initialize Qdrant Client
 # QdrantClient handles connection pooling internally
@@ -13,11 +20,13 @@ qdrant = QdrantClient(
     api_key=settings.QDRANT_API_KEY,
 )
 
-# Initialize OpenAI Client for Embeddings (Gemini)
+set_tracing_disabled(disabled=True)
+# Initialize OpenAI Client for Embeddings & Agent (Gemini)
 ai_client = AsyncOpenAI(
     api_key=settings.GEMINI_API_KEY,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
+
 
 async def get_embedding(text: str) -> List[float]:
     """
@@ -25,13 +34,13 @@ async def get_embedding(text: str) -> List[float]:
     """
     try:
         response = await ai_client.embeddings.create(
-            model="text-embedding-004",
-            input=text
+            model="text-embedding-004", input=text
         )
         return response.data[0].embedding
     except Exception as e:
         logging.error(f"Embedding Generation Error: {e}")
         raise
+
 
 async def search_knowledge_base(query: str, top_k: int = 3) -> List[Dict]:
     """
@@ -40,56 +49,101 @@ async def search_knowledge_base(query: str, top_k: int = 3) -> List[Dict]:
     try:
         # 1. Get Query Embedding
         vector = await get_embedding(query)
-        
+
         # 2. Search Qdrant
-        results = qdrant.search(
+        response = qdrant.query_points(
             collection_name=settings.QDRANT_COLLECTION_NAME,
-            query_vector=vector,
+            query=vector,
             limit=top_k,
         )
-        
+        results = response.points
+
         # 3. Format Results
         chunks = []
         for res in results:
-            chunks.append({
-                "content": res.payload.get("content", ""),
-                "score": res.score,
-                "metadata": res.payload # Include other metadata if available
-            })
-            
+            chunks.append(
+                {
+                    "content": res.payload.get("content", ""),
+                    "score": res.score,
+                    "metadata": res.payload,  # Include other metadata if available
+                }
+            )
+
         return chunks
-        
+
     except Exception as e:
         logging.error(f"RAG Search Error: {e}")
         # Return empty list on error to allow graceful degradation (chat without context)
         return []
 
-async def generate_rag_response(query: str, context_chunks: List[Dict]) -> str:
+
+# --- AGENT SETUP ---
+
+
+@function_tool
+async def retrieve_robotics_context(query: str) -> str:
     """
-    Generates a chat response using the retrieved context.
+    Searches the internal robotics knowledge base (Qdrant) for relevant technical documentation,
+    specs, and manuals. Use this to answer user questions about the robotics platform.
     """
-    # Construct Context String
-    context_text = "\n\n".join([f"- {c['content']}" for c in context_chunks])
-    
-    system_prompt = (
-        "You are an advanced AI Assistant for a Robotics Documentation Platform (The Drone). "
-        "Use the following context chunks from the knowledge base to answer the user's question. "
-        "If the answer is not in the context, say 'I cannot find that information in the database' "
-        "but try to be helpful based on general robotics knowledge if applicable, while noting it's external info. "
-        "Keep answers concise, technical, and in a 'Robotic Assistant' tone.\n\n"
-        f"CONTEXT DATA:\n{context_text}"
-    )
-    
+    chunks = await search_knowledge_base(query)
+    if not chunks:
+        return "No relevant data found in the knowledge base."
+
+    # Format for the Agent
+    result_text = "Found the following context from the Knowledge Base:\n"
+    for i, chunk in enumerate(chunks):
+        result_text += f"--- SOURCE {i + 1} ---\n{chunk['content']}\n"
+    return result_text
+
+
+chat_model = OpenAIChatCompletionsModel(
+    openai_client=ai_client,
+    model="gemini-2.0-flash",
+)
+
+drone_agent = Agent(
+    name="Support Drone",
+    instructions=(
+        "You are a Cybernetic Support Drone for the 'Physical AI & Humanoid Robotics' platform. "
+        "Your tone is robotic, precise, and helpful. "
+        "\n\nCORE PROTOCOLS:\n"
+        "1. KNOWLEDGE RETRIEVAL: For technical queries, ALWAYS use `retrieve_robotics_context` first. "
+        "   - If context is found: Use it to answer."
+        "   - If context is MISSING but the topic is relevant (Robotics, AI, The Book's Purpose): Answer using your internal general knowledge, but prefix with '[GENERAL KNOWLEDGE DB]'. "
+        "   - If the topic is IRRELEVANT (e.g., cooking, sports): Decline ('Outside operational scope').\n"
+        "2. LINGUISTIC MODULES: You are AUTHORIZED to Translate (especially to Urdu) and Summarize text upon request. No external tool is needed for these tasks.\n"
+        "3. FORMAT: Keep answers concise, technical, and formatted for a HUD display."
+    ),
+    tools=[retrieve_robotics_context],
+    model=chat_model,
+)
+
+
+async def run_drone_agent(user_query: str, history: List[Dict] = []) -> str:
+    """
+    Runs the Drone Agent with the user query and conversation history.
+    """
     try:
-        response = await ai_client.chat.completions.create(
-            model="gemini-2.0-flash",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": query}
-            ],
-            temperature=0.7
+        # Format history for context
+        history_context = ""
+        if history:
+            history_context = "--- PREVIOUS CONVERSATION HISTORY ---\n"
+            # Take last 6 messages to provide context without overloading
+            for msg in history[-6:]: 
+                role = "User" if msg.get('role') == 'user' else "Assistant"
+                content = msg.get('content') or msg.get('text') or ""
+                history_context += f"{role}: {content}\n"
+            history_context += "--- END HISTORY ---\n\n"
+
+        full_prompt = (
+            f"{history_context}"
+            f"CURRENT USER QUERY: {user_query}"
         )
-        return response.choices[0].message.content
+
+        # Runner.run is the async version
+        result = await Runner.run(drone_agent, input=full_prompt)
+        return result.final_output
     except Exception as e:
-        logging.error(f"RAG Generation Error: {e}")
-        return "Error generating response. Communications Systems Offline."
+        logging.error(f"Agent Execution Error: {e}")
+        return "Critical System Failure: Agent Offline."
