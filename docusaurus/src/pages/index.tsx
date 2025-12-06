@@ -193,8 +193,11 @@ function CTASection(): ReactNode {
             <Link className="cyber-button" to="/docs/intro">
               BEGIN TRAINING
             </Link>
-            <Link className="cyber-button secondary" to="/blog">
-              VIEW MISSION LOGS
+            <Link
+              className="cyber-button secondary"
+              href="https://github.com/TahaNadeemkhan/ai-native-book-of-robotics"
+            >
+              VIEW SOURCE CODE
             </Link>
           </div>
         </div>
