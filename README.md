@@ -66,9 +66,9 @@ cd robotics-book
 #### 2. Backend Setup
 ```bash
 cd api
-python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pip install -r pyproject.toml  # or use `uv sync` if using uv
+source .venv/bin/activate # or .venv\Scripts\activate on Windows
+uv sync
+uv pip install -r pyproject.toml  # or use `uv sync` if using uv
 ```
 
 Create a `.env` file in the root (or `api/`) with the following:
@@ -78,6 +78,7 @@ OPENAI_API_KEY="sk-..."
 QDRANT_URL="https://..."
 QDRANT_API_KEY="..."
 BETTER_AUTH_SECRET="..."
+GEMINI_API_KEY="..."
 GITHUB_CLIENT_ID="..."
 GITHUB_CLIENT_SECRET="..."
 ```
