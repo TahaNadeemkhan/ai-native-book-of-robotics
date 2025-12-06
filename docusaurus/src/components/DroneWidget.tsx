@@ -73,7 +73,7 @@ const DroneWidget: React.FC = () => {
         content: m.text
       }));
 
-      const res = await fetch('http://localhost:8000/api/drone/chat', {
+      const res = await fetch('/api/drone/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
