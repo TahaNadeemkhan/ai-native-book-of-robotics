@@ -27,7 +27,7 @@ export default function OnboardingPage() {
     await new Promise((r) => setTimeout(r, 1000));
 
     try {
-      const response = await fetch("/users/onboarding", {
+      const response = await fetch("/api/users/onboarding", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

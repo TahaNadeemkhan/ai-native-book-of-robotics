@@ -23,13 +23,17 @@ model = OpenAIChatCompletionsModel(
 
 def load_skill_instructions(skill_name: str) -> str:
     """
-    Loads the reusable skill definition from the .claude/skills directory.
+    Loads the reusable skill definition from the api/skills directory.
     Parses SKILL.md to extract the system prompt (content after frontmatter).
     """
-    # Determine path relative to the project root (assuming api/services/ is where we are)
-    # We need to go up from api/services/ to root, then .claude/skills/
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    skill_path = os.path.join(base_dir, ".claude", "skills", skill_name, "SKILL.md")
+    # Look for skills in api/skills/ directory (works on Vercel)
+    api_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    skill_path = os.path.join(api_dir, "skills", skill_name, "SKILL.md")
+
+    # Fallback to .claude/skills/ for local development
+    if not os.path.exists(skill_path):
+        base_dir = os.path.dirname(api_dir)
+        skill_path = os.path.join(base_dir, ".claude", "skills", skill_name, "SKILL.md")
     
     if not os.path.exists(skill_path):
         logging.error(f"Skill definition not found at: {skill_path}")

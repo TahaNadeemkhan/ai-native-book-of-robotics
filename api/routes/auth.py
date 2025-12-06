@@ -346,30 +346,30 @@ async def callback_github(request: Request, db: AsyncSession = Depends(get_db)):
                  raise HTTPException(status_code=400, detail="No verified primary email found")
 
         # 4. Create Internal Session/Token
-        jwt_token = await authenticate_github_user_and_create_token(
+        jwt_token, needs_onboarding = await authenticate_github_user_and_create_token(
             db=db,
             github_id=str(github_user.get("id")),
             email=email,
             display_name=github_user.get("name") or github_user.get("login"),
         )
 
-        # 5. Redirect to Frontend
+        # 5. Redirect to Frontend (or Onboarding if new user)
         # Dynamically determine frontend URL
         if settings.FRONTEND_URL:
             frontend_url = settings.FRONTEND_URL
         else:
-            # If FRONTEND_URL is not explicitly set, derive it from the request
-            # This is robust for Vercel where the API is hosted under /api/
-            # and the frontend is at the root.
             base = str(request.base_url)
-            # Remove /api/ from the base URL if present
             if base.endswith("/api/"):
                 frontend_url = base[:-len("/api/")]
             else:
-                frontend_url = base # Fallback if structure is different
+                frontend_url = base
             logging.info(f"DEBUG: Derived Frontend URL: {frontend_url}")
 
-        response = RedirectResponse(url=frontend_url)
+        # Redirect to onboarding if user hasn't completed profile
+        redirect_url = f"{frontend_url}/onboarding" if needs_onboarding else frontend_url
+        logging.info(f"DEBUG: Redirecting to: {redirect_url} (needs_onboarding={needs_onboarding})")
+
+        response = RedirectResponse(url=redirect_url)
 
         # SET SECURE COOKIE (Session)
         response.set_cookie(

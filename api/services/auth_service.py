@@ -92,14 +92,18 @@ async def authenticate_google_user_and_create_token(
 
 async def authenticate_github_user_and_create_token(
     db: AsyncSession, github_id: str, email: str, display_name: Optional[str] = None
-) -> str:
+) -> tuple[str, bool]:
     """
     Authenticates a GitHub user, creates or updates their record in the DB,
     and generates an application-specific JWT.
+
+    Returns: (access_token, needs_onboarding)
     """
     # Try to find an existing user by GitHub ID or Email (to link accounts)
     result = await db.execute(select(User).where((User.github_id == github_id) | (User.email == email)))
     user = result.scalars().first()
+
+    needs_onboarding = False
 
     if not user:
         # If user doesn't exist, create a new one.
@@ -113,6 +117,7 @@ async def authenticate_github_user_and_create_token(
         db.add(user)
         await db.commit()
         await db.refresh(user)
+        needs_onboarding = True  # New user needs onboarding
     else:
         # User exists, update details if necessary
         if not user.github_id:
@@ -121,9 +126,13 @@ async def authenticate_github_user_and_create_token(
             user.email_verified = True
         if display_name and not user.display_name:
             user.display_name = display_name
-        
+
         await db.commit()
         await db.refresh(user)
+
+        # Check if user has completed onboarding
+        if not user.additional_info or not user.additional_info.get("programming_proficiency"):
+            needs_onboarding = True
 
     # Generate JWT token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -131,7 +140,7 @@ async def authenticate_github_user_and_create_token(
         data={"sub": str(user.id), "tenant_id": str(user.tenant_id)},
         expires_delta=access_token_expires,
     )
-    return access_token
+    return access_token, needs_onboarding
 
 
 async def get_current_auth_context(token: Optional[str] = None) -> Optional[Dict]:
