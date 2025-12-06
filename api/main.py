@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 
 from fastapi import Depends, FastAPI, Header
@@ -24,17 +25,22 @@ logger.addHandler(handler)
 
 app = FastAPI()
 
-# Add SessionMiddleware for authlib's OAuth flow
+# Determine if we are in production (Vercel)
+is_production = os.getenv("VERCEL") == "1"
+
+# Add SessionMiddleware
+# Critical for Vercel: https_only=True to ensure Secure cookies on HTTPS
 app.add_middleware(
     SessionMiddleware, 
     secret_key=settings.SECRET_KEY, 
-    https_only=False, 
+    https_only=is_production, # True in prod, False in dev
     same_site="lax"
 )
 
 origins = [
-    "http://localhost:3000",  # Allow Docusaurus dev server
-    # Add other origins as needed for production
+    "http://localhost:3000",
+    "https://*.vercel.app", # Allow all Vercel subdomains
+    "*" # Allow all for now to fix connection issues
 ]
 
 app.add_middleware(
