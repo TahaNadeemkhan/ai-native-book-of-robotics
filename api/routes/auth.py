@@ -156,7 +156,16 @@ async def sign_in_social(
         
         if provider == "github":
             # 2. Construct GitHub Auth URL manually to have full control
-            redirect_uri = settings.GITHUB_REDIRECT_URI or str(request.url_for("callback_github"))
+            if settings.GITHUB_REDIRECT_URI:
+                redirect_uri = settings.GITHUB_REDIRECT_URI
+            else:
+                base = str(request.base_url)
+                if base.endswith("/api/"):
+                    base_root = base[:-len("/api/")]
+                else:
+                    base_root = base
+                redirect_uri = f"{base_root}/api/auth/callback/github"
+
             auth_url = (
                 f"https://github.com/login/oauth/authorize?"
                 f"client_id={settings.GITHUB_CLIENT_ID}&"
@@ -170,14 +179,11 @@ async def sign_in_social(
                 redirect_uri = f"{settings.FRONTEND_URL}/api/auth/callback/google"
             else:
                 base = str(request.base_url)
-                # Ensure we don't double stack /api/
                 if base.endswith("/api/"):
                     base_root = base[:-len("/api/")]
                 else:
                     base_root = base
                 redirect_uri = f"{base_root}/api/auth/callback/google"
-            
-            logging.info(f"DEBUG: Generated Google Redirect URI: {redirect_uri}")
             
             auth_url = (
                 f"https://accounts.google.com/o/oauth2/v2/auth?"
@@ -196,7 +202,7 @@ async def sign_in_social(
             value=state,
             httponly=True,
             max_age=600, # 10 minutes
-            secure=COOKIE_SECURE,
+            secure=(os.getenv("VERCEL") == "1"),
             samesite=COOKIE_SAMESITE,
             path="/"
         )
@@ -217,7 +223,15 @@ async def sign_in_github_direct(request: Request):
     state = secrets.token_urlsafe(16)
     
     # 2. Construct GitHub Auth URL
-    redirect_uri = settings.GITHUB_REDIRECT_URI or str(request.url_for("callback_github"))
+    if settings.GITHUB_REDIRECT_URI:
+        redirect_uri = settings.GITHUB_REDIRECT_URI
+    else:
+        base = str(request.base_url)
+        if base.endswith("/api/"):
+            base_root = base[:-len("/api/")]
+        else:
+            base_root = base
+        redirect_uri = f"{base_root}/api/auth/callback/github"
     
     logging.info(f"DEBUG: Using Redirect URI: {redirect_uri}")
     
@@ -252,7 +266,7 @@ async def sign_in_github_direct(request: Request):
         value=state,
         httponly=True,
         max_age=600,
-        secure=COOKIE_SECURE,
+        secure=(os.getenv("VERCEL") == "1"),
         samesite=COOKIE_SAMESITE,
         path="/"
     )
