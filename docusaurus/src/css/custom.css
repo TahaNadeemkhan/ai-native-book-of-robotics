@@ -131,6 +131,16 @@ p {
   z-index: 10;
 }
 
+/* Scanline animation for buttons */
+@keyframes scan-horizontal {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
 /* 3. Cyber Input Fields */
 .cyber-input {
   width: 100%;

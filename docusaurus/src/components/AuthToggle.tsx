@@ -151,32 +151,46 @@ const AuthToggle = () => {
           className="cyber-modal-backdrop"
           onClick={() => setShowModal(false)}
         >
-          {/* OUTER WRAPPER FOR CENTERING */}
-          <div className="min-h-screen flex items-center justify-center px-4 py-8">
-            {/* CARD LAYOUT - UPDATED: Increased max-w-xl and padding p-12 */}
+          <div className="min-h-screen flex items-center justify-center px-4 py-12">
             <div
-              className="w-full max-w-xl bg-[#0a0f14]/80 border border-[#00f7a3] rounded-xl shadow-[0_0_15px_#00f7a3] p-12 backdrop-blur space-y-8 relative"
+              className="w-full max-w-2xl bg-[#0a0f14]/90 border border-[#00f7a3] rounded-xl shadow-[0_0_25px_#00f7a3] backdrop-blur relative"
               onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: "650px" }}
             >
               {/* Scanline Overlay */}
               <div className="scanline-overlay"></div>
-              <div className="scanline-moving"></div>
 
-              {/* Close Button - UPDATED: Moved to top-3 right-3 to clear header */}
+              {/* Close Button */}
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-3 right-3 text-cb-text-body hover:text-cb-alert font-mono text-2xl z-20 transition-colors leading-none"
+                className="absolute top-5 right-5 text-[#9aa5b1] hover:text-[#ff003c] font-mono text-3xl z-20 transition-colors leading-none w-10 h-10 flex items-center justify-center rounded hover:bg-[#ff003c]/10"
+                title="Close"
               >
                 ×
               </button>
 
-              {/* Header - UPDATED: Added mt-4 to push text down from close button */}
-              <h2
-                className="text-center text-2xl glitch-text mt-4"
-                style={{ color: "var(--hud-primary)" }}
-              >
-                IDENTITY VERIFICATION
-              </h2>
+              {/* Header */}
+              <div className="text-center px-8 pt-10 pb-8 border-b border-[#00f7a3]/20">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border-2 border-[#00f7a3] bg-[#00f7a3]/5 mb-5">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00f7a3" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <h2
+                  className="text-3xl glitch-text"
+                  style={{
+                    color: "var(--hud-primary)",
+                    fontFamily: 'var(--hud-font-display)',
+                    textShadow: "0 0 15px rgba(0,247,163,0.5)"
+                  }}
+                >
+                  IDENTITY VERIFICATION
+                </h2>
+                <p className="text-sm font-mono text-[#9aa5b1] tracking-[0.15em] uppercase mt-3">
+                  Secure Neural Link Protocol
+                </p>
+              </div>
 
               {/* Tabs */}
               <div className="cyber-tabs">
@@ -196,16 +210,25 @@ const AuthToggle = () => {
 
               {/* Error Message */}
               {error && (
-                <div className="p-4 border border-red-500 bg-red-500/10 text-red-400 text-sm font-mono flex items-center rounded">
-                  <span className="mr-2">⚠</span> ERROR: {error}
+                <div className="mx-10 mt-6 p-4 border-2 border-[#ff003c] bg-[#ff003c]/10 text-[#ff003c] text-sm font-mono flex items-center rounded">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="mr-3">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>ERROR: {error}</span>
                 </div>
               )}
 
-              {/* Form - UPDATED: Increased vertical spacing to space-y-8 */}
-              <div className="space-y-8 relative z-10">
+              {/* Form */}
+              <div className="px-10 py-8 space-y-8 relative z-10">
                 {view === "signup" && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-mono text-cb-text-body tracking-wider">
+                  <div className="space-y-3">
+                    <label className="text-sm font-mono text-[#9aa5b1] tracking-[0.12em] flex items-center gap-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
                       OPERATOR ALIAS
                     </label>
                     <input
@@ -214,13 +237,18 @@ const AuthToggle = () => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="cyber-input"
+                      style={{ padding: '14px 16px', fontSize: '15px' }}
                       required
                     />
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <label className="text-sm font-mono text-cb-text-body tracking-wider">
+                <div className="space-y-3">
+                  <label className="text-sm font-mono text-[#9aa5b1] tracking-[0.12em] flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                      <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
                     EMAIL FREQUENCY
                   </label>
                   <input
@@ -229,12 +257,17 @@ const AuthToggle = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="cyber-input"
+                    style={{ padding: '14px 16px', fontSize: '15px' }}
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-mono text-cb-text-body tracking-wider">
+                <div className="space-y-3">
+                  <label className="text-sm font-mono text-[#9aa5b1] tracking-[0.12em] flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
                     ACCESS CODE
                   </label>
                   <input
@@ -243,6 +276,7 @@ const AuthToggle = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="cyber-input"
+                    style={{ padding: '14px 16px', fontSize: '15px' }}
                     required
                   />
                 </div>
@@ -250,68 +284,84 @@ const AuthToggle = () => {
                 <button
                   onClick={handleEmailAuth}
                   disabled={loading}
-                  className="cyber-button w-full mt-2"
-                  style={{ height: "52px", fontSize: "15px" }}
+                  className="cyber-button w-full mt-6"
+                  style={{
+                    padding: '16px 32px',
+                    fontSize: '15px',
+                    background: loading
+                      ? 'rgba(0, 247, 163, 0.15)'
+                      : 'linear-gradient(135deg, rgba(0, 247, 163, 0.08), rgba(0, 234, 255, 0.08))',
+                    boxShadow: '0 0 20px rgba(0,247,163,0.3)'
+                  }}
                 >
                   {loading ? (
-                    <span className="flex items-center animate-pulse justify-center">
-                      <span className="w-2 h-2 bg-current rounded-full mr-2"></span>
+                    <span className="flex items-center animate-pulse justify-center gap-2">
+                      <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                      </svg>
                       PROCESSING...
                     </span>
                   ) : view === "login" ? (
-                    "AUTHENTICATE"
+                    <span className="flex items-center justify-center gap-2">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+                      </svg>
+                      AUTHENTICATE
+                    </span>
                   ) : (
-                    "INITIALIZE PROTOCOL"
+                    <span className="flex items-center justify-center gap-2">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M12.5 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6"/>
+                      </svg>
+                      INITIALIZE PROTOCOL
+                    </span>
                   )}
                 </button>
               </div>
 
               {/* Divider */}
-              <div className="relative flex py-4 items-center z-10">
-                <div className="flex-grow border-t border-cb-text-body/20"></div>
-                <span className="flex-shrink mx-4 text-cb-text-body/50 text-xs font-mono uppercase tracking-widest">
+              <div className="relative flex py-2 items-center z-10 px-10">
+                <div className="flex-grow border-t border-[#9aa5b1]/20"></div>
+                <span className="flex-shrink mx-5 text-[#9aa5b1]/50 text-xs font-mono uppercase tracking-[0.2em]">
                   OR EXTERNAL UPLINK
                 </span>
-                <div className="flex-grow border-t border-cb-text-body/20"></div>
+                <div className="flex-grow border-t border-[#9aa5b1]/20"></div>
               </div>
 
-              {/* Social Buttons - UPDATED: Increased gap to space-y-6 */}
-              <div className="space-y-6 relative z-10">
+              {/* Social Buttons */}
+              <div className="space-y-4 relative z-10 px-10 pb-10">
                 <button
                   type="button"
                   onClick={handleGitHubLogin}
-                  className="flex items-center justify-center gap-3
-                    w-full py-3 px-4 rounded-lg border
-                    bg-[#0a0f14]/60 hover:bg-[#0a0f14]/80
-                    border-[#00f7a3] text-[#00f7a3]
-                    transition-all duration-200 text-sm font-medium"
+                  className="cyber-button secondary w-full"
+                  style={{
+                    padding: '14px 24px',
+                    fontSize: '14px',
+                    justifyContent: 'center',
+                    gap: '12px'
+                  }}
                 >
                   <span className="w-5 h-5 flex-shrink-0">
                     <GitHubIcon />
                   </span>
-                  Continue with GitHub
+                  <span className="tracking-wider">Continue with GitHub</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="flex items-center justify-center gap-3
-                    w-full py-3 px-4 rounded-lg border
-                    bg-[#0a0f14]/60 hover:bg-[#0a0f14]/80
-                    border-[#00f7a3] text-[#00f7a3]
-                    transition-all duration-200 text-sm font-medium"
+                  className="cyber-button secondary w-full"
+                  style={{
+                    padding: '14px 24px',
+                    fontSize: '14px',
+                    justifyContent: 'center',
+                    gap: '12px'
+                  }}
                 >
                   <span className="w-5 h-5 flex-shrink-0">
                     <GoogleIcon />
                   </span>
-                  Continue with Google
+                  <span className="tracking-wider">Continue with Google</span>
                 </button>
-              </div>
-
-              {/* Footer Decoration */}
-              <div className="mt-8 text-center">
-                <p className="text-xs text-cb-text-body/40 font-mono tracking-[0.2em]">
-                  SECURE CONNECTION ESTABLISHED v4.0
-                </p>
               </div>
             </div>
           </div>

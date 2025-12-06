@@ -6,7 +6,6 @@ from sqlalchemy import select, delete, update
 
 from api.dependencies import get_db, get_current_tenant_id, get_current_user_id
 from api.models.user import User, UserCreate, UserInDB
-from api.models.profile import UserProfile, UserProfileCreate, UserProfileInDB
 
 router = APIRouter()
 
@@ -17,35 +16,29 @@ async def read_users_me(
 ):
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
-        
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@router.get("/me/onboarding", response_model=Dict) 
+@router.get("/me/onboarding", response_model=Dict)
 async def get_onboarding_info(
     user_id: UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get onboarding info from user_profiles.
+    Get onboarding info from user.additional_info.
     """
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
-        
-    # Fetch from user_profiles
-    result = await db.execute(select(UserProfile).where(UserProfile.user_id == user_id))
-    profile = result.scalars().first()
-    
-    if profile:
-        return {
-            "programming_proficiency": profile.programming_proficiency,
-            "ai_proficiency": profile.ai_proficiency,
-            "hardware_info": profile.hardware_info
-        }
-    return {}
+
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user.additional_info or {}
 
 @router.post("/onboarding")
 async def update_onboarding_info(
@@ -54,50 +47,38 @@ async def update_onboarding_info(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Update or Create onboarding info in user_profiles.
+    Update onboarding info in user.additional_info.
     """
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
-        
-    # Fetch existing profile
-    result = await db.execute(select(UserProfile).where(UserProfile.user_id == user_id))
-    profile = result.scalars().first()
-    
-    # Fetch user to get tenant_id (required for new profile)
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalars().first()
+
+    user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if profile:
-        # Update existing
-        if "programming_proficiency" in info:
-            profile.programming_proficiency = info["programming_proficiency"]
-        if "ai_proficiency" in info:
-            profile.ai_proficiency = info["ai_proficiency"]
-        if "hardware_info" in info:
-            profile.hardware_info = info["hardware_info"]
-    else:
-        # Create new
-        profile = UserProfile(
-            user_id=user_id,
-            tenant_id=user.tenant_id,
-            programming_proficiency=info.get("programming_proficiency"),
-            ai_proficiency=info.get("ai_proficiency"),
-            hardware_info=info.get("hardware_info")
-        )
-        db.add(profile)
-    
+    # Ensure additional_info is a dictionary
+    if user.additional_info is None:
+        user.additional_info = {}
+
+    print(f"[DEBUG] Received onboarding info: {info}")
+
+    # Create a new dict to trigger SQLAlchemy's change detection for JSONB
+    updated_info = {**user.additional_info, **info}
+    user.additional_info = updated_info
+
+    # Explicitly mark the column as modified (required for JSONB columns)
+    from sqlalchemy.orm import attributes
+    attributes.flag_modified(user, "additional_info")
+
+    print(f"[DEBUG] User additional_info after update: {user.additional_info}")
+
     await db.commit()
-    await db.refresh(profile)
-    
+    await db.refresh(user)
+    print("[DEBUG] Onboarding data committed and refreshed.")
+
     return {
-        "success": True, 
-        "additional_info": {
-            "programming_proficiency": profile.programming_proficiency,
-            "ai_proficiency": profile.ai_proficiency,
-            "hardware_info": profile.hardware_info
-        }
+        "success": True,
+        "additional_info": user.additional_info
     }
 
 @router.post("/", response_model=UserInDB, status_code=status.HTTP_201_CREATED)

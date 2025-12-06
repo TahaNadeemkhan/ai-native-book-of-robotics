@@ -4,10 +4,8 @@ import { useHistory } from "@docusaurus/router";
 import { useSession } from "../lib/auth-client";
 import ProficiencySelect from "../components/ProficiencySelect";
 import HardwareInput from "../components/HardwareInput";
-import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 
 export default function OnboardingPage() {
-  const { siteConfig } = useDocusaurusContext();
   const { data: session, isPending } = useSession();
   const history = useHistory();
 
@@ -43,14 +41,22 @@ export default function OnboardingPage() {
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log("Onboarding saved successfully:", result);
+
+        // Add a small delay to ensure backend has committed the data
+        await new Promise((r) => setTimeout(r, 500));
+
+        // Redirect to homepage
         history.push("/docs/intro");
       } else {
-        console.error("Failed to save onboarding data");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Failed to save onboarding data:", errorData);
         alert("Failed to save data. Please try again.");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("An error occurred.");
+      alert("An error occurred. Please check your connection.");
     } finally {
       setLoading(false);
     }
@@ -76,32 +82,37 @@ export default function OnboardingPage() {
       title={`Neural Onboarding`}
       description="Configure your cybernetic profile"
     >
-      <div className="min-h-[calc(100vh-60px)] flex items-center justify-center px-4 py-12 bg-[#0c0f12]">
-        {/* FIXED: Changed max-w-xl to max-w-lg and added style maxWidth: '550px' to force constraint */}
+      <div className="min-h-[calc(100vh-60px)] flex items-center justify-center px-4 py-16 bg-[#0c0f12]">
         <div
-          className="w-full max-w-lg mx-auto bg-[#0a0f14]/80 border border-[#00f7a3] rounded-xl shadow-[0_0_15px_#00f7a3] p-10 backdrop-blur space-y-8 relative"
-          style={{ maxWidth: "550px" }}
+          className="w-full max-w-3xl mx-auto bg-[#0a0f14]/80 border border-[#00f7a3] rounded-xl shadow-[0_0_20px_#00f7a3] backdrop-blur relative"
+          style={{ maxWidth: "800px" }}
         >
           {/* Scanline effect */}
           <div className="scanline-overlay"></div>
-          <div className="scanline-moving"></div>
 
           {/* Header */}
-          <div className="text-center space-y-3 relative z-10">
+          <div className="text-center space-y-4 relative z-10 px-8 pt-12 pb-8 border-b border-[#00f7a3]/20">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border-2 border-[#00f7a3] bg-[#00f7a3]/5 mb-4">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00f7a3" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+            </div>
             <h1
-              className="text-2xl sm:text-3xl font-bold glitch-text text-[#00f7a3] tracking-widest mb-0"
-              style={{ textShadow: "0 0 10px rgba(0,247,163,0.5)" }}
+              className="text-3xl sm:text-4xl font-bold glitch-text text-[#00f7a3] tracking-widest mb-0"
+              style={{
+                fontFamily: 'var(--hud-font-display)',
+                textShadow: "0 0 15px rgba(0,247,163,0.5)"
+              }}
             >
               NEURAL CALIBRATION
             </h1>
-            <p className="text-[10px] sm:text-xs font-mono text-[#9aa5b1] tracking-[0.3em] uppercase">
-              Configure Parameters for Optimization
+            <p className="text-sm font-mono text-[#9aa5b1] tracking-[0.2em] uppercase max-w-md mx-auto">
+              Optimize system parameters for personalized experience
             </p>
-            <div className="w-24 h-0.5 bg-[#00f7a3]/30 mx-auto mt-4"></div>
           </div>
 
-          <form onSubmit={handleSubmit} className="relative z-10 space-y-8">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="relative z-10 px-12 py-10">
+            <div className="space-y-10">
               <ProficiencySelect
                 label="PROGRAMMING PROFICIENCY"
                 value={programmingLevel}
@@ -117,31 +128,47 @@ export default function OnboardingPage() {
               <HardwareInput value={hardware} onChange={setHardware} />
             </div>
 
-            <div className="pt-4 border-t border-[#9aa5b1]/10">
+            <div className="mt-12 pt-8 border-t border-[#9aa5b1]/10">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 px-6 rounded border border-[#00f7a3] bg-[#00f7a3]/10 text-[#00f7a3] font-mono font-bold tracking-[0.2em] uppercase hover:bg-[#00f7a3] hover:text-[#0c0f12] transition-all duration-300 shadow-[0_0_15px_rgba(0,247,163,0.2)] hover:shadow-[0_0_25px_rgba(0,247,163,0.6)]"
+                className="cyber-button w-full"
+                style={{
+                  padding: '18px 32px',
+                  fontSize: '1rem',
+                  background: loading
+                    ? 'rgba(0, 247, 163, 0.15)'
+                    : 'linear-gradient(135deg, rgba(0, 247, 163, 0.08), rgba(0, 234, 255, 0.08))',
+                  boxShadow: '0 0 20px rgba(0,247,163,0.3)'
+                }}
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-3 animate-pulse">
-                    <span className="w-2 h-2 bg-current rounded-full"></span>
+                    <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                    </svg>
                     UPLOADING DATA...
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-3">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M9 5l7 7-7 7"/>
+                    </svg>
                     INITIALIZE SYSTEM
-                    <span className="text-lg leading-none">→</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M5 12h14m-7-7l7 7-7 7"/>
+                    </svg>
                   </span>
                 )}
               </button>
             </div>
           </form>
 
-          <div className="text-center relative z-10">
-            <p className="text-[10px] text-[#9aa5b1]/30 font-mono tracking-[0.4em]">
+          <div className="text-center relative z-10 px-8 pb-8">
+            <div className="flex items-center justify-center gap-2 text-xs text-[#9aa5b1]/40 font-mono tracking-widest">
+              <div className="w-2 h-2 rounded-full bg-[#00f7a3] animate-pulse"></div>
               SYNC RATE: 99.9%
-            </p>
+            </div>
           </div>
         </div>
       </div>

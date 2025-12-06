@@ -99,7 +99,7 @@
 - [ ] T043 [UI] Implement "Deep Cyberpunk Theme" in `custom.css`. Define variables: `--cb-neon-green`, `--cb-background`, `--cb-cyan-accent`. Apply `text-shadow` glows to headings.
 - [ ] T044 [Frontend] Create `NeuralPersonalizeButton.tsx`. Logic: If Authenticated -> Call Personalization API. If Guest -> Show "Security Clearance" Overlay.
 - [ ] T045 [Backend] Create `POST /ai/personalize-chapter` endpoint. It receives `chapter_content` + `user_onboarding_data` and calls the `content-personalizer` Skill.
-- [ ] T046 [Frontend] **Verification:** Log in, complete onboarding, go to a chapter, click "Neural Personalize", and verify the content changes to match your Hardware/Proficiency.
+- [ ] T046 [Frontend] **Verification:** Log in, complete onboarding, go to a chapter, click "Personalize Content", and verify the content changes to match your Hardware/Proficiency.
 
 ## CHECKPOINT 4: Advanced Onboarding & Polish
 - [ ] Manual Verification: Google Login works, Onboarding Form saves data, and the Neural Personalize button actually changes content based on that data. The UI looks "Cyberpunk" (Dark/Neon).
@@ -109,7 +109,7 @@
 * **Goal:** Build the "Assistant" (The Chatbot) connecting to **Existing Qdrant Data**.
 * **Deliverables:**
     1.  Qdrant Client Configuration (Connecting to existing Cloud Cluster).
-    2.  OpenAI Agent setup.
+    2.  OpenAI Agent SDK setup.
     3.  `DroneWidget.tsx` floating component.
     4.  Context Menu "Scan" implementation.
 

@@ -1,4 +1,3 @@
-cat <<EOF > .claude/skills/content-personalizer/SKILL.md
 ---
 name: "content-personalizer"
 description: "Rewrite technical documentation based on User Proficiency (Beginner/Expert) and Hardware Specifications."
@@ -46,4 +45,3 @@ Think of 'Backpropagation' like a teacher correcting a student's mistake. The mo
 
 **Hardware Note:**
 You are using an **RTX 4090**. This is a beast! You will be able to run this training process extremely fast, likely in seconds rather than minutes."
-EOF

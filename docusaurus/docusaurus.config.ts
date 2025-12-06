@@ -99,6 +99,14 @@ const config: Config = {
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
+          type: 'custom-aiControls',
+          position: 'right',
+        },
+        {
+          type: 'custom-settingsButton',
+          position: 'right',
+        },
+        {
           type: 'custom-authToggle',
           position: 'right',
         },
