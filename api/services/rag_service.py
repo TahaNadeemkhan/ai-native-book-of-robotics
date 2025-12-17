@@ -144,7 +144,7 @@ def get_drone_agent() -> Optional[Agent]:
         try:
             chat_model = OpenAIChatCompletionsModel(
                 openai_client=ai_client,
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
             )
 
             _drone_agent = Agent(
